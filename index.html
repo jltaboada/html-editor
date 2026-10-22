@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editor HTML · WYSIWYG + código en vivo</title>
+  <meta name="description" content="Editor HTML online con vista visual y código sincronizados, limpiador de HTML, buscar y reemplazar, importación de DOCX y exportación a HTML o Word. Todo en tu navegador.">
+  <meta name="theme-color" content="#b84516">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b84516'/%3E%3Cpath d='M13 10l-5 6 5 6M19 10l5 6-5 6' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="svg-sprite" aria-hidden="true">
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></symbol>
+    <symbol id="i-bold" viewBox="0 0 24 24"><path d="M7 4h6a4 4 0 0 1 0 8H7z"/><path d="M7 12h7a4 4 0 0 1 0 8H7z"/></symbol>
+    <symbol id="i-italic" viewBox="0 0 24 24"><path d="M19 4h-9M14 20H5M15 4 9 20"/></symbol>
+    <symbol id="i-underline" viewBox="0 0 24 24"><path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/></symbol>
+    <symbol id="i-strike" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M17.5 7.5A4.5 4.5 0 0 0 13 4h-2a4 4 0 0 0-1.2 7.8M6.5 16.5A4.5 4.5 0 0 0 11 20h2a4 4 0 0 0 3.2-6.4"/></symbol>
+    <symbol id="i-sup" viewBox="0 0 24 24"><path d="m4 19 8-8M12 19 4 11"/><path d="M17 11h4M19 8v6"/></symbol>
+    <symbol id="i-sub" viewBox="0 0 24 24"><path d="m4 17 8-8M12 17 4 9"/><path d="M16 8h4M18 5v6"/></symbol>
+    <symbol id="i-align-left" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h14"/></symbol>
+    <symbol id="i-align-center" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M5 18h14"/></symbol>
+    <symbol id="i-align-right" viewBox="0 0 24 24"><path d="M4 6h16M10 12h10M6 18h14"/></symbol>
+    <symbol id="i-align-justify" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+    <symbol id="i-list-ordered" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 5h1v4M3.5 13H6l-2.5 3H6"/></symbol>
+    <symbol id="i-indent" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M4 9l3 3-3 3"/></symbol>
+    <symbol id="i-outdent" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9M7 9l-3 3 3 3"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2"/></symbol>
+    <symbol id="i-unlink" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.2M4 4l16 16"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-4.5-4.5L6 21"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16M15 4v16"/></symbol>
+    <symbol id="i-hr" viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m19 20H8.5L4 15.5a2.1 2.1 0 0 1 0-3L12.5 4a2.1 2.1 0 0 1 3 0l5.5 5.5a2.1 2.1 0 0 1 0 3L13 20.5"/><path d="m9 9 7 7"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 6-5 6 5 6M16 6l5 6-5 6"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 21h16"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-file-plus" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6M9 15h6"/></symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="m3 21 12-12"/><path d="M16 3v4M14 5h4M18 9v2M20 11v2M10 3v2M11 4h-2M19 15l1 1M6 7v2M7 8H5"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15v4M17 17h4M5 3v3M3.5 4.5h3"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-13.5-4.5L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 13.5 4.5L20 15"/><path d="M20 20v-5h-5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-5.5-5.5"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2.2-2.5 4"/><circle cx="12" cy="17.5" r=".7" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-type" viewBox="0 0 24 24"><path d="M4 6V4h16v2M12 4v16M9 20h6"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24"><path d="M10 3 8 21M16 3l-2 18M4 9h17M3 15h17"/></symbol>
+    <symbol id="i-arrows-v" viewBox="0 0 24 24"><path d="M8 4v16M5 7l3-3 3 3M16 20V4M13 17l3 3 3-3"/></symbol>
+    <symbol id="i-compress" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/><path d="m4 9 5-5M20 9l-5-5M4 15l5 5M20 15l-5 5"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18h1.5a2.5 2.5 0 0 0 0-5H12a2 2 0 0 1 0-4h5.5A3.5 3.5 0 0 0 21 8.5C21 5.5 17 3 12 3Z"/><circle cx="7.5" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="9.5" cy="6.5" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="6" r="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M7 3v6h8V3M7 21v-7h10v7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 2.5 17a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M9 11H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6a5 5 0 0 1-5 5M20 11h-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6a5 5 0 0 1-5 5"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 3h7v7M21 3l-9 9"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></symbol>
+    <symbol id="i-layout" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+    <symbol id="i-cloud-check" viewBox="0 0 24 24"><path d="M6.5 19a4.5 4.5 0 0 1-.7-8.9A6 6 0 0 1 17.5 9a5 5 0 0 1 .5 10h-11Z"/><path d="m9 14 2 2 4-4"/></symbol>
+    <symbol id="i-image-plus" viewBox="0 0 24 24"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><path d="m3 16 5-5 4 4 2-2 3 3"/><path d="M19 3v6M16 6h6"/></symbol>
+    <symbol id="i-pilcrow" viewBox="0 0 24 24"><path d="M13 4v16M17 4v16M8 4h9M8 4a4 4 0 0 0 0 8h5"/></symbol>
+    <symbol id="i-arrow-down-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M8 13l4 4 4-4"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 12h8M8 16h8"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-code"/></svg></span>
+      <span class="brand-name">Editor <strong>HTML</strong></span>
+      <span class="chip chip--local" title="Tus documentos se quedan en este navegador">
+        <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> 100% local
+      </span>
+    </div>
+
+    <div class="topbar-center">
+      <div class="viewswitch" role="group" aria-label="Cambiar vista del editor">
+        <button type="button" class="viewswitch-btn is-active" data-view="split" aria-pressed="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-columns"/></svg><span>Dividido</span>
+        </button>
+        <button type="button" class="viewswitch-btn" data-view="visual" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg><span>Visual</span>
+        </button>
+        <button type="button" class="viewswitch-btn" data-view="source" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="#i-code"/></svg><span>Código</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button type="button" class="btn btn--ghost" id="openBtn" title="Abrir un archivo .html, .htm, .docx o .txt">
+        <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span class="btn-label">Abrir</span>
+      </button>
+      <input type="file" id="fileInput" accept=".html,.htm,.docx,.txt,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      <button type="button" class="btn btn--ghost" id="demoBtn" title="Cargar contenido de demostración">
+        <svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg><span class="btn-label">Demo</span>
+      </button>
+      <div class="menu-anchor">
+        <button type="button" class="btn btn--primary" id="downloadBtn" aria-haspopup="menu" aria-expanded="false">
+          <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Descargar</span>
+          <svg class="icon icon--sm" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="menu" id="downloadMenu" role="menu" aria-labelledby="downloadBtn" hidden>
+          <button type="button" role="menuitem" data-export="html">
+            <svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>
+            <span><strong>HTML</strong><small>Documento .html listo para usar</small></span>
+          </button>
+          <button type="button" role="menuitem" data-export="zip">
+            <svg class="icon" aria-hidden="true"><use href="#i-image-plus"/></svg>
+            <span><strong>HTML + imágenes</strong><small>.zip con /images si hay datos incrustados</small></span>
+          </button>
+          <button type="button" role="menuitem" data-export="docx">
+            <svg class="icon" aria-hidden="true"><use href="#i-doc"/></svg>
+            <span><strong>Word</strong><small>Documento .docx editable</small></span>
+          </button>
+        </div>
+      </div>
+      <button type="button" class="iconbtn" id="themeBtn" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">
+        <svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg>
+      </button>
+      <button type="button" class="iconbtn" id="helpBtn" title="Atajos y ayuda" aria-label="Abrir ayuda">
+        <svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <div class="workspace" id="workspace" data-view="split" style="--split: 50%">
+      <section class="pane pane--visual" id="visualPane" aria-label="Editor visual WYSIWYG">
+        <div class="pane-head pane-head--visual">
+          <div class="pane-id">
+            <span class="pane-dot pane-dot--visual" aria-hidden="true"></span>
+            <span class="pane-name">Visual</span>
+            <span class="pane-sub">WYSIWYG</span>
+          </div>
+          <div class="pane-head-note" id="visualNote">Haz clic en el documento para escribir</div>
+        </div>
+
+        <div class="toolbar" id="formatToolbar" role="toolbar" aria-label="Formato de texto">
+          <div class="tb-group">
+            <button type="button" class="tbtn" data-cmd="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg class="icon"><use href="#i-undo"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer"><svg class="icon"><use href="#i-redo"/></svg></button>
+          </div>
+
+          <div class="tb-group">
+            <label class="tb-select tb-select--block">
+              <span class="sr-only">Estilo de párrafo</span>
+              <select id="blockSelect" title="Estilo de párrafo">
+                <option value="p">Párrafo</option>
+                <option value="h1">Título 1</option>
+                <option value="h2">Título 2</option>
+                <option value="h3">Título 3</option>
+                <option value="h4">Título 4</option>
+                <option value="h5">Título 5</option>
+                <option value="h6">Título 6</option>
+                <option value="blockquote">Cita</option>
+                <option value="pre">Preformateado</option>
+              </select>
+              <svg class="icon tb-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+            </label>
+            <label class="tb-select tb-select--font">
+              <span class="sr-only">Tipografía</span>
+              <select id="fontSelect" title="Tipografía">
+                <option value="">Tipografía</option>
+                <option value="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">Sistema</option>
+                <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+                <option value="'Times New Roman', Times, serif">Times</option>
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+                <option value="'Courier New', Courier, monospace">Courier</option>
+                <option value="ui-monospace, Consolas, 'Courier New', monospace">Monoespaciada</option>
+              </select>
+              <svg class="icon tb-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+            </label>
+            <label class="tb-select tb-select--size">
+              <span class="sr-only">Tamaño de letra</span>
+              <select id="sizeSelect" title="Tamaño de letra">
+                <option value="">Tamaño</option>
+                <option value="12">12 px</option>
+                <option value="14">14 px</option>
+                <option value="16">16 px</option>
+                <option value="18">18 px</option>
+                <option value="24">24 px</option>
+                <option value="32">32 px</option>
+                <option value="48">48 px</option>
+              </select>
+              <svg class="icon tb-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+            </label>
+          </div>
+
+          <div class="tb-group">
+            <button type="button" class="tbtn" data-cmd="bold" title="Negrita (Ctrl+B)" aria-label="Negrita" aria-pressed="false"><svg class="icon"><use href="#i-bold"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="italic" title="Cursiva (Ctrl+I)" aria-label="Cursiva" aria-pressed="false"><svg class="icon"><use href="#i-italic"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="underline" title="Subrayado (Ctrl+U)" aria-label="Subrayado" aria-pressed="false"><svg class="icon"><use href="#i-underline"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="strikeThrough" title="Tachado" aria-label="Tachado" aria-pressed="false"><svg class="icon"><use href="#i-strike"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="superscript" title="Superíndice" aria-label="Superíndice" aria-pressed="false"><svg class="icon"><use href="#i-sup"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="subscript" title="Subíndice" aria-label="Subíndice" aria-pressed="false"><svg class="icon"><use href="#i-sub"/></svg></button>
+          </div>
+
+          <div class="tb-group">
+            <button type="button" class="tbtn tbtn--color" id="textColorBtn" title="Color del texto" aria-label="Color del texto" aria-haspopup="true" aria-expanded="false">
+              <span class="color-glyph" aria-hidden="true">A</span><span class="color-bar" id="textColorBar"></span>
+            </button>
+            <button type="button" class="tbtn tbtn--color" id="highlightBtn" title="Color de resaltado" aria-label="Color de resaltado" aria-haspopup="true" aria-expanded="false">
+              <svg class="icon" aria-hidden="true"><use href="#i-palette"/></svg><span class="color-bar" id="highlightBar"></span>
+            </button>
+          </div>
+
+          <div class="tb-group">
+            <button type="button" class="tbtn" data-cmd="justifyLeft" title="Alinear a la izquierda" aria-label="Alinear a la izquierda" aria-pressed="false"><svg class="icon"><use href="#i-align-left"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="justifyCenter" title="Centrar" aria-label="Centrar" aria-pressed="false"><svg class="icon"><use href="#i-align-center"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="justifyRight" title="Alinear a la derecha" aria-label="Alinear a la derecha" aria-pressed="false"><svg class="icon"><use href="#i-align-right"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="justifyFull" title="Justificar" aria-label="Justificar" aria-pressed="false"><svg class="icon"><use href="#i-align-justify"/></svg></button>
+          </div>
+
+          <div class="tb-group">
+            <button type="button" class="tbtn" data-cmd="insertUnorderedList" title="Lista con viñetas" aria-label="Lista con viñetas" aria-pressed="false"><svg class="icon"><use href="#i-list"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="insertOrderedList" title="Lista numerada" aria-label="Lista numerada" aria-pressed="false"><svg class="icon"><use href="#i-list-ordered"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="outdent" title="Reducir sangría" aria-label="Reducir sangría"><svg class="icon"><use href="#i-outdent"/></svg></button>
+            <button type="button" class="tbtn" data-cmd="indent" title="Aumentar sangría" aria-label="Aumentar sangría"><svg class="icon"><use href="#i-indent"/></svg></button>
+          </div>
+
+          <div class="tb-group">
+            <button type="button" class="tbtn" id="linkBtn" title="Insertar o editar enlace (Ctrl+K)" aria-label="Insertar enlace"><svg class="icon"><use href="#i-link"/></svg></button>
+            <button type="button" class="tbtn" id="imageBtn" title="Insertar imagen" aria-label="Insertar imagen"><svg class="icon"><use href="#i-image"/></svg></button>
+            <button type="button" class="tbtn" id="tableBtn" title="Insertar tabla" aria-label="Insertar tabla"><svg class="icon"><use href="#i-table"/></svg></button>
+            <button type="button" class="tbtn" id="hrBtn" title="Línea horizontal" aria-label="Línea horizontal"><svg class="icon"><use href="#i-hr"/></svg></button>
+          </div>
+
+          <div class="tb-group">
+            <button type="button" class="tbtn" id="clearFormatBtn" title="Quitar todo el formato" aria-label="Quitar formato"><svg class="icon"><use href="#i-eraser"/></svg></button>
+            <button type="button" class="tbtn" id="fullscreenBtn" title="Pantalla completa" aria-label="Pantalla completa" aria-pressed="false"><svg class="icon"><use href="#i-layout"/></svg></button>
+          </div>
+        </div>
+
+        <div class="visual-scroll" id="visualScroll">
+          <div class="paper-frame" id="paperFrame">
+            <iframe id="visualFrame" class="visual-frame" title="Documento editable" sandbox="allow-same-origin allow-popups allow-forms allow-modals"></iframe>
+          </div>
+        </div>
+
+        <div class="pane-foot">
+          <span class="pane-foot-hint"><kbd>Ctrl</kbd> + <kbd>S</kbd> guarda un borrador local</span>
+          <span id="visualCount">0 palabras</span>
+        </div>
+      </section>
+
+      <div class="splitter" id="splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Redimensionar paneles" aria-valuemin="20" aria-valuemax="80" aria-valuenow="50"></div>
+
+      <section class="pane pane--source" id="sourcePane" aria-label="Editor de código HTML">
+        <div class="pane-head pane-head--source">
+          <div class="file-tab" title="Documento actual">
+            <svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>
+            <span id="fileName">sin-titulo.html</span>
+            <span class="dirty-dot" id="dirtyDot" aria-label="Cambios sin guardar" hidden></span>
+          </div>
+          <div class="source-actions" role="group" aria-label="Acciones del código">
+            <button type="button" class="iconbtn" id="undoBtn" title="Deshacer última operación" aria-label="Deshacer última operación"><svg class="icon"><use href="#i-undo"/></svg></button>
+            <button type="button" class="iconbtn" id="redoBtn" title="Rehacer operación" aria-label="Rehacer operación"><svg class="icon"><use href="#i-redo"/></svg></button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <button type="button" class="iconbtn" id="newBtn" title="Nueva página en blanco" aria-label="Nueva página"><svg class="icon"><use href="#i-file-plus"/></svg></button>
+            <button type="button" class="iconbtn" id="lipsumBtn" title="Añadir 5 párrafos Lorem ipsum" aria-label="Añadir texto de relleno"><svg class="icon"><use href="#i-pilcrow"/></svg></button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <button type="button" class="iconbtn toggle" id="encodingBtn" title="Convertir caracteres especiales a entidades HTML" aria-label="Codificar caracteres especiales" aria-pressed="false"><svg class="icon"><use href="#i-hash"/></svg></button>
+            <button type="button" class="iconbtn toggle is-active" id="autoScrollBtn" title="Sincronizar el desplazamiento de ambos paneles" aria-label="Desplazamiento sincronizado" aria-pressed="true"><svg class="icon"><use href="#i-arrows-v"/></svg></button>
+            <button type="button" class="iconbtn" id="indentBtn" title="Indentar y ordenar el código" aria-label="Indentar código"><svg class="icon"><use href="#i-indent"/></svg></button>
+            <button type="button" class="iconbtn" id="compressBtn" title="Comprimir el HTML" aria-label="Comprimir HTML"><svg class="icon"><use href="#i-compress"/></svg></button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <button type="button" class="iconbtn" id="copyBtn" title="Copiar el código al portapapeles" aria-label="Copiar código"><svg class="icon"><use href="#i-copy"/></svg></button>
+            <span class="char-pill" id="charCount" title="Caracteres en el código">0</span>
+          </div>
+        </div>
+
+        <div class="cm-wrap" id="cmWrap">
+          <textarea id="sourceEditor" aria-label="Código HTML"></textarea>
+        </div>
+
+        <div class="dock" id="dock">
+          <div class="dock-head">
+            <div class="dock-tabs" role="tablist" aria-label="Herramientas del código">
+              <button type="button" class="dock-tab is-active" data-dock="clean" role="tab" aria-selected="true" aria-controls="dockClean">
+                <svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Limpieza
+                <span class="dock-badge" id="cleanBadge">6</span>
+              </button>
+              <button type="button" class="dock-tab" data-dock="find" role="tab" aria-selected="false" aria-controls="dockFind">
+                <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg> Buscar y reemplazar
+              </button>
+            </div>
+            <div class="dock-head-actions">
+              <button type="button" class="btn btn--clean" id="cleanBtn" title="Ejecutar todas las reglas marcadas (Ctrl+Shift+K)">
+                <svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Clean
+              </button>
+              <button type="button" class="iconbtn" id="dockToggle" aria-label="Contraer herramientas" aria-expanded="true" title="Contraer herramientas">
+                <svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="dock-body" id="dockBody">
+            <div class="dock-panel is-active" id="dockClean" data-dock-panel="clean" role="tabpanel">
+              <div class="dock-help">
+                <span>Marca las reglas y pulsa <strong>Clean</strong>, o usa <svg class="icon icon--xs" aria-hidden="true"><use href="#i-arrow-right"/></svg> para ejecutar solo una. Los ajustes y las reglas de búsqueda se guardan en este navegador.</span>
+                <button type="button" class="linkbtn" id="toggleAllClean">Alternar todas</button>
+              </div>
+              <div class="clean-grid" id="cleanGrid"></div>
+            </div>
+
+            <div class="dock-panel" id="dockFind" data-dock-panel="find" role="tabpanel" hidden>
+              <div class="fr-head">
+                <span class="dock-help">Hasta 10 reglas, aplicadas en orden. Activa <strong>Regex</strong> para patrones y <strong>Aa</strong> para ignorar mayúsculas.</span>
+                <div class="fr-head-actions">
+                  <span class="fr-count" id="frCount" role="status" aria-live="polite"></span>
+                  <button type="button" class="btn btn--soft btn--sm" id="frAdd"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg> Regla</button>
+                  <button type="button" class="btn btn--soft btn--sm" id="frApplyAll"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg> Aplicar todo</button>
+                </div>
+              </div>
+              <div class="fr-rows" id="frRows"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <div class="status-left">
+      <span class="status-item" id="saveStatus"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-cloud-check"/></svg> Guardado local</span>
+      <span class="status-item status-item--muted" id="docSize">0 KB</span>
+    </div>
+    <div class="status-right">
+      <span class="status-item" id="stats">0 caracteres · 0 palabras</span>
+      <span class="status-sep" aria-hidden="true"></span>
+      <span class="status-item" id="cursorPos">Ln 1, Col 1</span>
+    </div>
+  </footer>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+  <div class="drop-overlay" id="dropOverlay" hidden>
+    <div class="drop-card">
+      <svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>
+      <strong>Suelta el archivo para abrirlo</strong>
+      <span>.html · .htm · .docx · .txt</span>
+    </div>
+  </div>
+
+  <div class="busy" id="busy" hidden>
+    <div class="busy-card" role="status" aria-live="assertive">
+      <span class="spinner" aria-hidden="true"></span>
+      <p id="busyText">Procesando…</p>
+    </div>
+  </div>
+
+  <div class="color-pop" id="colorPop" hidden>
+    <div class="color-pop-head">
+      <span id="colorPopTitle">Color del texto</span>
+      <button type="button" class="iconbtn iconbtn--xs" id="colorPopClose" aria-label="Cerrar paleta"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="color-grid" id="colorGrid"></div>
+    <div class="color-pop-foot">
+      <label class="color-custom">Personalizado <input type="color" id="colorCustom" value="#b84516"></label>
+      <button type="button" class="linkbtn" id="colorClear">Quitar color</button>
+    </div>
+  </div>
+
+  <dialog class="dialog" id="linkDialog" aria-labelledby="linkDialogTitle">
+    <form id="linkForm" novalidate>
+      <header class="dialog-head">
+        <h2 id="linkDialogTitle">Insertar enlace</h2>
+        <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <label class="field">
+          <span>Texto visible</span>
+          <input type="text" id="linkText" placeholder="Texto del enlace" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>URL</span>
+          <input type="text" id="linkUrl" placeholder="https://ejemplo.com" autocomplete="off" required>
+        </label>
+        <div class="field-row">
+          <label class="check"><input type="checkbox" id="linkBlank" checked> Abrir en pestaña nueva</label>
+          <label class="check"><input type="checkbox" id="linkNofollow"> Añadir rel="nofollow"</label>
+        </div>
+        <p class="field-error" id="linkError" hidden>Escribe una URL válida.</p>
+      </div>
+      <footer class="dialog-foot">
+        <button type="button" class="btn btn--danger-ghost" id="linkRemove" hidden>Quitar enlace</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn--ghost" data-close-dialog>Cancelar</button>
+        <button type="submit" class="btn btn--primary" id="linkSubmit">Insertar enlace</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="imageDialog" aria-labelledby="imageDialogTitle">
+    <form id="imageForm" novalidate>
+      <header class="dialog-head">
+        <h2 id="imageDialogTitle">Insertar imagen</h2>
+        <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <label class="field">
+          <span>URL de la imagen</span>
+          <input type="text" id="imageUrl" placeholder="https://ejemplo.com/imagen.jpg" autocomplete="off">
+        </label>
+        <div class="or"><span>o sube una desde tu equipo</span></div>
+        <label class="upload-zone" id="imageUploadZone">
+          <input type="file" id="imageFile" accept="image/*" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#i-image"/></svg>
+          <span id="imageFileName">Elegir imagen…</span>
+          <small>Se incrustará en el HTML como data URI (máx. 4 MB)</small>
+        </label>
+        <div class="image-preview" id="imagePreview" hidden>
+          <img id="imagePreviewImg" alt="Vista previa de la imagen">
+        </div>
+        <div class="field-row">
+          <label class="field field--half">
+            <span>Texto alternativo</span>
+            <input type="text" id="imageAlt" placeholder="Descripción de la imagen" autocomplete="off">
+          </label>
+          <label class="field field--half">
+            <span>Ancho (px, opcional)</span>
+            <input type="number" id="imageWidth" min="1" max="4000" placeholder="Auto" autocomplete="off">
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" id="imageNewTab"> Envolver en un enlace que abra la imagen</label>
+        <p class="field-error" id="imageError" hidden>Indica una URL o elige un archivo.</p>
+      </div>
+      <footer class="dialog-foot">
+        <span class="spacer"></span>
+        <button type="button" class="btn btn--ghost" data-close-dialog>Cancelar</button>
+        <button type="submit" class="btn btn--primary">Insertar imagen</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog dialog--sm" id="tableDialog" aria-labelledby="tableDialogTitle">
+    <form id="tableForm">
+      <header class="dialog-head">
+        <h2 id="tableDialogTitle">Insertar tabla</h2>
+        <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <div class="field-row">
+          <label class="field field--half">
+            <span>Filas</span>
+            <input type="number" id="tableRows" value="3" min="1" max="30" required>
+          </label>
+          <label class="field field--half">
+            <span>Columnas</span>
+            <input type="number" id="tableCols" value="3" min="1" max="12" required>
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" id="tableHeader" checked> Primera fila como cabecera</label>
+        <label class="check"><input type="checkbox" id="tableBorder" checked> Mostrar bordes (atributo border)</label>
+        <p class="dialog-hint">Las celdas se crean vacías y con un párrafo dentro. Puedes editarlas directamente en el panel visual.</p>
+      </div>
+      <footer class="dialog-foot">
+        <span class="spacer"></span>
+        <button type="button" class="btn btn--ghost" data-close-dialog>Cancelar</button>
+        <button type="submit" class="btn btn--primary">Insertar tabla</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="helpDialog" aria-labelledby="helpTitle">
+    <header class="dialog-head">
+      <h2 id="helpTitle">Atajos y ayuda</h2>
+      <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </header>
+    <div class="dialog-body help-body">
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-keyboard"/></svg> Atajos</h3>
+        <dl class="shortcuts">
+          <div><dt><kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>I</kbd> / <kbd>U</kbd></dt><dd>Negrita, cursiva, subrayado</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>K</kbd></dt><dd>Insertar o editar enlace</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>S</kbd></dt><dd>Guardar borrador en este navegador</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd></dt><dd>Ejecutar limpieza</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></dt><dd>Indentar el código</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></dt><dd>Descargar HTML</dd></div>
+          <div><dt><kbd>F1</kbd></dt><dd>Abrir esta ayuda</dd></div>
+        </dl>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> Privacidad</h3>
+        <p>El documento no se envía a ningún servidor. El borrador y las preferencias se guardan en <code>localStorage</code> de tu navegador. Al descargar un HTML con imágenes incrustadas, se empaqueta un ZIP con la carpeta <code>images/</code>.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Limpieza</h3>
+        <p><strong>Clean</strong> aplica todas las reglas marcadas y además normaliza el marcado (cierra etiquetas, corrige anidamientos). La regla <strong>Scripts y estilos</strong> está desactivada por defecto: actívala si quieres eliminar bloques <code>&lt;script&gt;</code> y <code>&lt;style&gt;</code>.</p>
+        <p>Las reglas de búsqueda y reemplazo admiten expresiones regulares. Una regex inválida no modifica el documento y muestra un aviso.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-doc"/></svg> Importar y exportar</h3>
+        <p>Puedes arrastrar un <code>.html</code>, <code>.htm</code>, <code>.docx</code> o <code>.txt</code> a cualquier parte de la app. Los DOCX se convierten con Mammoth y las imágenes se incrustan como data URIs. La exportación a Word conserva el texto y el formato básico; las imágenes incrustadas pueden no incluirse.</p>
+      </section>
+      <p class="help-credit">Implementación original inspirada en la interfaz y las herramientas de HTML-Online. Sin código ni recursos copiados del original.</p>
+    </div>
+    <footer class="dialog-foot">
+      <span class="spacer"></span>
+      <button type="button" class="btn btn--primary" data-close-dialog>Entendido</button>
+    </footer>
+  </dialog>
+
+  <dialog class="dialog dialog--sm" id="confirmDialog" aria-labelledby="confirmTitle">
+    <header class="dialog-head">
+      <h2 id="confirmTitle">Confirmar</h2>
+      <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </header>
+    <div class="dialog-body">
+      <p id="confirmMessage" class="confirm-message"></p>
+    </div>
+    <footer class="dialog-foot">
+      <span class="spacer"></span>
+      <button type="button" class="btn btn--ghost" data-close-dialog>Cancelar</button>
+      <button type="button" class="btn btn--danger" id="confirmAccept">Aceptar</button>
+    </footer>
+  </dialog>
+
+  <script src="vendor/codemirror/codemirror.min.js"></script>
+  <script src="vendor/codemirror/mode/xml/xml.min.js"></script>
+  <script src="vendor/codemirror/mode/javascript/javascript.min.js"></script>
+  <script src="vendor/codemirror/mode/css/css.min.js"></script>
+  <script src="vendor/codemirror/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="vendor/codemirror/addon/fold/xml-fold.min.js"></script>
+  <script src="vendor/codemirror/addon/edit/matchtags.min.js"></script>
+  <script src="vendor/codemirror/addon/edit/closetag.min.js"></script>
+  <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
+  <script src="vendor/beautify.min.js"></script>
+  <script src="vendor/beautify-css.min.js"></script>
+  <script src="vendor/beautify-html.min.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/mammoth.browser.min.js"></script>
+  <script src="vendor/html-docx.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/demo.js"></script>
+  <script src="assets/js/cleaner.js"></script>
+  <script src="assets/js/wysiwyg.js"></script>
+  <script src="assets/js/files.js"></script>
+  <script src="assets/js/findreplace.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
