@@ -9,6 +9,8 @@ Es una reimplementación original inspirada en las herramientas del editor onlin
 [HTML-Online](https://html-online.com/html-editor/). No contiene código, textos ni recursos
 copiados del original.
 
+**Demo en vivo:** https://jltaboada.github.io/html-editor/
+
 ## Cómo usarlo
 
 1. Abre `index.html` con doble clic en cualquier navegador moderno (Chrome, Edge, Firefox, Safari).
