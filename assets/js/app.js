@@ -13,10 +13,10 @@
   const VIEWS = ['split', 'visual', 'source'];
 
   const PALETTE = [
-    '#000000', '#3a2417', '#5e574c', '#8a6a54', '#b84516', '#d97706',
-    '#ca8a04', '#65a30d', '#16a34a', '#0d9488', '#0e658f', '#2563eb',
-    '#4f46e5', '#7c3aed', '#a21caf', '#db2777', '#dc2626', '#f97316',
-    '#facc15', '#84cc16', '#22c55e', '#14b8a6', '#38bdf8', '#ffffff',
+    '#000000', '#222222', '#5f452a', '#7a5a3a', '#02874d', '#026a3d',
+    '#0f5132', '#9aa3a0', '#b03a2e', '#dc2626', '#f97316', '#d97706',
+    '#ca8a04', '#84cc16', '#16a34a', '#14b8a6', '#1d4ed8', '#2563eb',
+    '#4f46e5', '#7c3aed', '#a21caf', '#db2777', '#d1e7dd', '#ffffff',
   ];
 
   const state = {
@@ -42,7 +42,7 @@
     split: 50,
     theme: 'light',
     cleanIds: [],
-    colors: { text: '#b84516', highlight: '#ffe9a8' },
+    colors: { text: '#222222', highlight: '#fff3cd' },
     colorTarget: 'text',
     imageData: null,
     history: [],
@@ -101,9 +101,6 @@
     if (state.settings.theme === 'dark' || state.settings.theme === 'light') {
       return state.settings.theme;
     }
-    try {
-      if (global.matchMedia && global.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
-    } catch (error) { /* preferencia no disponible */ }
     return 'light';
   }
 
@@ -429,7 +426,7 @@
     const btn = $('#themeBtn');
     if (btn) btn.title = state.theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', state.theme === 'dark' ? '#1c1813' : '#b84516');
+    if (meta) meta.setAttribute('content', state.theme === 'dark' ? '#06482e' : '#02874d');
     if (!silent) {
       saveSettingsDebounced();
       App.toast(state.theme === 'dark' ? 'Tema oscuro activado.' : 'Tema claro activado.', 'info', 1800);
@@ -488,11 +485,11 @@
 
   function updateColors() {
     const textBar = $('#textColorBar');
-    if (textBar) textBar.style.background = state.colors.text || '#b84516';
+    if (textBar) textBar.style.background = state.colors.text || '#222222';
     const highlightBar = $('#highlightBar');
-    if (highlightBar) highlightBar.style.background = state.colors.highlight || '#ffe9a8';
+    if (highlightBar) highlightBar.style.background = state.colors.highlight || '#fff3cd';
     const custom = $('#colorCustom');
-    if (custom) custom.value = state.colors[state.colorTarget] || '#b84516';
+    if (custom) custom.value = state.colors[state.colorTarget] || (state.colorTarget === 'text' ? '#222222' : '#fff3cd');
   }
 
   function updateEncodingBtn() {
@@ -860,7 +857,7 @@
     const command = target === 'text' ? 'foreColor' : 'hiliteColor';
     state.wysiwyg.applyColor(value, command);
     if (color === 'clear') {
-      if (target === 'text') state.colors.text = '#211e19';
+      if (target === 'text') state.colors.text = '#222222';
       else state.colors.highlight = 'transparent';
     } else {
       state.colors[target] = color;
@@ -1584,6 +1581,8 @@
   function init() {
     state.settings = readSettings();
     state.theme = detectTheme();
+    const creditYear = document.querySelector('#creditYear');
+    if (creditYear) creditYear.textContent = String(new Date().getFullYear());
     state.view = VIEWS.indexOf(state.settings.view) !== -1 ? state.settings.view : 'split';
     state.split = clamp(Number(state.settings.split) || 50, 20, 80);
     state.autoScroll = state.settings.autoScroll !== false;

@@ -11,6 +11,10 @@ original; los textos completos están disponibles en los repositorios indicados.
 | [Mammoth.js](https://github.com/mwilliamson/mammoth.js) | 1.8.0 | `mammoth.browser.min.js` | BSD-2-Clause |
 | [html-docx-js](https://github.com/evidenceprime/html-docx-js) | 0.3.1 | `html-docx.js` | MIT |
 | [js-beautify](https://github.com/beautifier/js-beautify) | 1.15.1 | `beautify.min.js`, `beautify-css.min.js`, `beautify-html.min.js` | MIT |
+| [Varela Round](https://github.com/alefalefalef/Varela-Round-Hebrew) | v21 (Google Fonts) | `assets/fonts/varela-round-latin.woff2`, `assets/fonts/varela-round-latin-ext.woff2` | SIL OFL 1.1 |
+
+El logo de `assets/img/beaypepe-logo.png` es propiedad de BeayPePeTools y se usa como
+identificador visual del proyecto.
 
 ## Avisos de licencia
 
@@ -30,6 +34,14 @@ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPO
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+### SIL Open Font License 1.1 (Varela Round)
+
+El texto completo de la licencia está en [`assets/fonts/OFL.txt`](../assets/fonts/OFL.txt).
+
+Copyright 2023 The Varela Round Project Authors
+(https://github.com/alefalefalef/Varela-Round-Hebrew/), with Reserved Font Names 'Varela' and
+'Varela Round'.
 
 ### BSD-2-Clause (Mammoth.js)
 

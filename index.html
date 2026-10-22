@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Editor HTML · WYSIWYG + código en vivo</title>
+  <title>Editor HTML · BeayPePeTools</title>
   <meta name="description" content="Editor HTML online con vista visual y código sincronizados, limpiador de HTML, buscar y reemplazar, importación de DOCX y exportación a HTML o Word. Todo en tu navegador.">
-  <meta name="theme-color" content="#b84516">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b84516'/%3E%3Cpath d='M13 10l-5 6 5 6M19 10l5 6-5 6' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#02874d">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2302874d'/%3E%3Cpath d='M13 10l-5 6 5 6M19 10l5 6-5 6' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css">
   <link rel="stylesheet" href="assets/css/app.css">
+  <link rel="stylesheet" href="assets/css/theme-beaypepe.css">
 </head>
 <body>
   <svg xmlns="http://www.w3.org/2000/svg" class="svg-sprite" aria-hidden="true">
@@ -81,7 +82,8 @@
 
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-code"/></svg></span>
+      <img class="brand-logo" src="assets/img/beaypepe-logo.png" alt="BeayPePeTools" width="160" height="35">
+      <span class="brand-sep" aria-hidden="true"></span>
       <span class="brand-name">Editor <strong>HTML</strong></span>
       <span class="chip chip--local" title="Tus documentos se quedan en este navegador">
         <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> 100% local
@@ -343,6 +345,7 @@
       <span class="status-item" id="saveStatus"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-cloud-check"/></svg> Guardado local</span>
       <span class="status-item status-item--muted" id="docSize">0 KB</span>
     </div>
+    <div class="status-credit">© 2018 - <span id="creditYear">2026</span> <a href="https://beaypepe.com" target="_blank" rel="noopener">BeayPePe</a></div>
     <div class="status-right">
       <span class="status-item" id="stats">0 caracteres · 0 palabras</span>
       <span class="status-sep" aria-hidden="true"></span>
@@ -374,7 +377,7 @@
     </div>
     <div class="color-grid" id="colorGrid"></div>
     <div class="color-pop-foot">
-      <label class="color-custom">Personalizado <input type="color" id="colorCustom" value="#b84516"></label>
+      <label class="color-custom">Personalizado <input type="color" id="colorCustom" value="#222222"></label>
       <button type="button" class="linkbtn" id="colorClear">Quitar color</button>
     </div>
   </div>

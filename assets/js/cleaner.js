@@ -625,19 +625,20 @@
     const safeTitle = App.escapeHtml(title || 'Documento');
     const styles = [
       '    :root { color-scheme: light; }',
-      '    body { max-width: 820px; margin: 0 auto; padding: 48px 24px; color: #222; background: #fff; font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 16px; line-height: 1.65; }',
+      '    body { max-width: 820px; margin: 0 auto; padding: 48px 24px; color: #222222; background: #fff; font-family: "Varela Round", "Trebuchet MS", "Segoe UI", system-ui, Arial, sans-serif; font-size: 16px; line-height: 1.65; }',
       '    h1, h2, h3, h4, h5, h6 { line-height: 1.25; margin: 1.2em 0 .5em; }',
       '    h1:first-child, h2:first-child, p:first-child { margin-top: 0; }',
       '    p { margin: 0 0 .9em; }',
-      '    a { color: #0e658f; }',
+      '    a { color: #02874d; }',
       '    img { max-width: 100%; height: auto; }',
       '    table { border-collapse: collapse; max-width: 100%; }',
       '    th, td { padding: 6px 10px; vertical-align: top; }',
-      '    table[border] th, table[border] td { border: 1px solid #ccc; }',
-      '    blockquote { margin: 1em 0; padding: .2em 0 .2em 1em; border-left: 3px solid #b84516; color: #555; }',
-      '    pre { overflow: auto; padding: 12px; background: #f6f3ec; border-radius: 8px; }',
-      '    code { font-family: ui-monospace, Consolas, monospace; }',
-      '    hr { border: 0; border-top: 1px solid #ddd; margin: 2em 0; }',
+      '    th { background: #f2f6f5; }',
+      '    table[border] th, table[border] td { border: 1px solid #dbdbdb; }',
+      '    blockquote { margin: 1em 0; padding: .2em 0 .2em 1em; border-left: 3px solid #02874d; color: #4b5563; }',
+      '    pre { overflow: auto; padding: 12px; border: 1px solid #dddddd; border-radius: 5px; background: #f5f5f5; }',
+      '    code { font-family: "Courier New", Courier, monospace; }',
+      '    hr { border: 0; border-top: 1px solid #dddddd; margin: 2em 0; }',
     ].join('\n');
     return [
       '<!doctype html>',

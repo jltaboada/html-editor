@@ -9,6 +9,10 @@ Es una reimplementación original inspirada en las herramientas del editor onlin
 [HTML-Online](https://html-online.com/html-editor/). No contiene código, textos ni recursos
 copiados del original.
 
+El tema visual sigue la paleta y la tipografía de [BeayPePeTools](https://beaypepetools.com/):
+verde `#02874d`, marrón `#5f452a` y la fuente Varela Round. El logo de BeayPePeTools se incluye
+como identificación visual del proyecto.
+
 **Demo en vivo:** https://jltaboada.github.io/html-editor/
 
 ## Cómo usarlo
@@ -68,7 +72,10 @@ En macOS se usa `⌘` en lugar de `Ctrl`.
 
 ```
 index.html                 Estructura de la app y orden de carga de scripts
-assets/css/app.css         Tema claro/oscuro y todo el diseño
+assets/css/app.css         Base de la interfaz y tema claro/oscuro
+assets/css/theme-beaypepe.css  Paleta, tipografía y acabados BeayPePeTools
+assets/fonts/              Varela Round (woff2) y licencia SIL OFL
+assets/img/                Logo de BeayPePeTools
 assets/js/utils.js         Utilidades (DOM, avisos, descargas, confirmaciones…)
 assets/js/demo.js          Contenido de demostración y Lorem ipsum
 assets/js/cleaner.js       Reglas de limpieza, indentado, compresión y entidades
@@ -93,4 +100,6 @@ vendor/                    Librerías de terceros (ver vendor/LICENSES.md)
 
 Todas las librerías están incluidas en `vendor/` y se usan con sus licencias originales:
 CodeMirror 5.65.16 (MIT), JSZip 3.10.1 (MIT/GPLv3), Mammoth 1.8.0 (BSD-2-Clause),
-html-docx-js 0.3.1 (MIT) y js-beautify 1.15.1 (MIT). Consulta `vendor/LICENSES.md` para más detalle.
+html-docx-js 0.3.1 (MIT) y js-beautify 1.15.1 (MIT). La interfaz usa la fuente
+[Varela Round](https://github.com/alefalefalef/Varela-Round-Hebrew) (SIL OFL 1.1), incluida en
+`assets/fonts/`. Consulta `vendor/LICENSES.md` para más detalle.

@@ -4,15 +4,32 @@
 
   const App = global.HTMLEditor = global.HTMLEditor || {};
 
+  const FONT_DIR = new URL('assets/fonts/', document.baseURI).href;
   const DOCUMENT_CSS = `
+    @font-face {
+      font-family: "Varela Round";
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url("${FONT_DIR}varela-round-latin-ext.woff2") format("woff2");
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+      font-family: "Varela Round";
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url("${FONT_DIR}varela-round-latin.woff2") format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
     :root { color-scheme: light; }
     html, body { margin: 0; padding: 0; }
     body {
       min-height: 100vh;
       padding: 48px 56px 110px;
       background: #ffffff;
-      color: #211e19;
-      font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+      color: #222222;
+      font-family: "Varela Round", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
       font-size: 16px;
       line-height: 1.65;
       outline: none;
@@ -21,7 +38,7 @@
     }
     body:empty::before {
       content: attr(data-placeholder);
-      color: #b3aa99;
+      color: #9aa3a0;
       pointer-events: none;
     }
     h1, h2, h3, h4, h5, h6 { margin: 1.1em 0 .5em; line-height: 1.2; letter-spacing: -.015em; font-weight: 700; }
@@ -31,27 +48,28 @@
     h3 { font-size: 1.3em; }
     h4 { font-size: 1.1em; }
     h5 { font-size: 1em; }
-    h6 { font-size: .9em; text-transform: uppercase; letter-spacing: .05em; color: #5e574c; }
+    h6 { font-size: .9em; text-transform: uppercase; letter-spacing: .05em; color: #5f452a; }
     p { margin: 0 0 .9em; }
     ul, ol { margin: 0 0 .9em; padding-left: 1.5em; }
     li { margin: .18em 0; }
-    a { color: #0e658f; text-decoration: underline; text-underline-offset: 2px; }
+    a { color: #02874d; text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: #026a3d; }
     img { max-width: 100%; height: auto; }
     figure { margin: 1em 0; }
-    figcaption { color: #6b6458; font-size: .875em; }
+    figcaption { color: #6b7280; font-size: .875em; }
     table { border-collapse: collapse; max-width: 100%; margin: 1em 0; }
-    th, td { border: 1px solid #d8d1c4; padding: 7px 10px; vertical-align: top; min-width: 2em; }
-    th { background: #f7f3ea; font-weight: 700; text-align: left; }
+    th, td { border: 1px solid #dbdbdb; padding: 7px 10px; vertical-align: top; min-width: 2em; }
+    th { background: #f2f6f5; font-weight: 700; text-align: left; }
     table[border="0"] th, table[border="0"] td { border: 0; }
-    blockquote { margin: 1em 0; padding: .15em 0 .15em 16px; border-left: 3px solid #b84516; color: #5c554a; }
-    pre { margin: 1em 0; padding: 14px 16px; border-radius: 8px; background: #f6f2e9; overflow: auto; font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: .875em; line-height: 1.55; white-space: pre-wrap; }
-    code { padding: 2px 5px; border-radius: 4px; background: #f3efe6; font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: .9em; }
+    blockquote { margin: 1em 0; padding: .15em 0 .15em 16px; border-left: 3px solid #02874d; color: #4b5563; }
+    pre { margin: 1em 0; padding: 14px 16px; border: 1px solid #dddddd; border-radius: 5px; background: #f5f5f5; overflow: auto; font-family: "Courier New", Courier, monospace; font-size: .875em; line-height: 1.55; white-space: pre-wrap; }
+    code { padding: 2px 5px; border-radius: 4px; background: #f5f5f5; font-family: "Courier New", Courier, monospace; font-size: .9em; }
     pre code { padding: 0; background: none; }
-    hr { border: 0; border-top: 1px solid #ddd6c8; margin: 1.8em 0; }
-    mark { background: #ffe9a8; padding: 0 2px; }
+    hr { border: 0; border-top: 1px solid #dddddd; margin: 1.8em 0; }
+    mark { background: #fff3cd; padding: 0 2px; }
     small { font-size: .85em; }
     sup, sub { line-height: 0; }
-    ::selection { background: rgba(184, 69, 22, .22); }
+    ::selection { background: rgba(2, 135, 77, .22); }
     table { table-layout: auto; }
     @media (max-width: 640px) {
       body { padding: 28px 22px 80px; }
