@@ -1319,8 +1319,8 @@ body.is-resizing iframe { pointer-events: none; }
   white-space: nowrap;
 }
 .glyph-search--dialog { margin-bottom: 2px; }
-.dialog--wide { width: min(660px, calc(100vw - 28px)); }
-.dialog--wide .dialog-body { gap: 10px; }
+.dialog.dialog--wide { width: min(660px, calc(100vw - 28px)); }
+.dialog.dialog--wide .dialog-body { gap: 10px; }
 
 .field-hint { margin: -7px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
 .date-preview {
