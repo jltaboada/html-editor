@@ -10,10 +10,9 @@ Es una reimplementación original inspirada en las herramientas del editor onlin
 copiados del original.
 
 El tema visual sigue la paleta y la tipografía de [BeayPePeTools](https://beaypepetools.com/):
-verde `#02874d`, marrón `#5f452a` y la fuente Varela Round. El logo de BeayPePeTools se incluye
-como identificación visual del proyecto.
+verde `#02874d`, marrón `#5f452a` y la fuente Varela Round.
 
-**Demo en vivo:** https://jltaboada.github.io/html-editor/
+**Pruébalo en vivo:** https://jltaboada.github.io/html-editor/
 
 ## Cómo usarlo
 
@@ -36,11 +35,12 @@ python -m http.server 8080
 - **Barra de formato**: deshacer/rehacer, estilos de párrafo (H1–H6, cita, preformateado),
   tipografía, tamaño, negrita, cursiva, subrayado, tachado, superíndice/subíndice, color de texto y
   de resaltado, alineación, listas, sangría, enlaces, imágenes, tablas, líneas horizontales y
-  limpiar formato.
+  limpiar formato. Los desplegables de formato, tipografía y tamaño muestran una vista previa real
+  de cada opción.
 - **Limpieza** con 11 reglas (estilos inline, clases e IDs, etiquetas vacías, etiquetas con un
   espacio, espacios repetidos, comentarios, atributos, a texto plano, Smart `&nbsp;`, caracteres
-  «IA» y scripts/estilos). El botón **Clean** aplica todas las reglas marcadas; cada regla también
-  se puede ejecutar por separado.
+  «IA» y scripts/estilos). El botón **Limpieza** aplica todas las reglas marcadas; cada regla
+  también se puede ejecutar por separado.
 - **Buscar y reemplazar** con hasta 10 reglas aplicadas en orden, modo regex y opción de ignorar
   mayúsculas. Las reglas se guardan en el navegador.
 - **Importar**: arrastra un archivo a la ventana o usa **Abrir** (`.html`, `.htm`, `.docx`, `.txt`).
@@ -49,7 +49,7 @@ python -m http.server 8080
   imágenes incrustadas, o DOCX para Word.
 - **Extras**: borrador local automático, codificar/decodificar entidades HTML, indentar, comprimir,
   copiar el código, desplazamiento sincronizado de los paneles, contador de caracteres/palabras,
-  tema claro/oscuro, modo enfoque, contenido de demostración y Lorem ipsum.
+  modo enfoque y Lorem ipsum.
 - **Privacidad**: nada se envía a ningún servidor. El borrador y las preferencias viven en
   `localStorage`.
 
@@ -60,7 +60,7 @@ python -m http.server 8080
 | `Ctrl` + `B` / `I` / `U` | Negrita, cursiva, subrayado |
 | `Ctrl` + `K` | Insertar o editar enlace |
 | `Ctrl` + `S` | Guardar borrador en el navegador |
-| `Ctrl` + `Shift` + `K` | Ejecutar limpieza (Clean) |
+| `Ctrl` + `Shift` + `K` | Ejecutar limpieza |
 | `Ctrl` + `Shift` + `F` | Indentar el código |
 | `Ctrl` + `Alt` + `D` | Descargar HTML |
 | `F1` | Abrir la ayuda |
@@ -72,12 +72,12 @@ En macOS se usa `⌘` en lugar de `Ctrl`.
 
 ```
 index.html                 Estructura de la app y orden de carga de scripts
-assets/css/app.css         Base de la interfaz y tema claro/oscuro
+assets/css/app.css         Base de la interfaz
 assets/css/theme-beaypepe.css  Paleta, tipografía y acabados BeayPePeTools
 assets/fonts/              Varela Round (woff2) y licencia SIL OFL
-assets/img/                Logo de BeayPePeTools
+assets/img/                Logotipo de BeayPePeTools (no se usa en la interfaz)
 assets/js/utils.js         Utilidades (DOM, avisos, descargas, confirmaciones…)
-assets/js/demo.js          Contenido de demostración y Lorem ipsum
+assets/js/demo.js          Texto de relleno (Lorem ipsum)
 assets/js/cleaner.js       Reglas de limpieza, indentado, compresión y entidades
 assets/js/wysiwyg.js       Editor visual sobre un iframe aislado
 assets/js/files.js         Lectura de archivos y exportación HTML/ZIP/DOCX

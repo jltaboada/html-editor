@@ -40,7 +40,6 @@
     autoScroll: true,
     view: 'split',
     split: 50,
-    theme: 'light',
     cleanIds: [],
     colors: { text: '#222222', highlight: '#fff3cd' },
     colorTarget: 'text',
@@ -95,13 +94,6 @@
     const draft = loadJson(DRAFT_KEY);
     if (!draft || typeof draft.html !== 'string') return null;
     return draft;
-  }
-
-  function detectTheme() {
-    if (state.settings.theme === 'dark' || state.settings.theme === 'light') {
-      return state.settings.theme;
-    }
-    return 'light';
   }
 
   /* ---------- Código ---------- */
@@ -202,6 +194,9 @@
       state.wysiwyg.setHtml(html || '');
       updateToolbarState(state.wysiwyg.getState());
       refreshMeta();
+      if (state.wysiwyg.document) {
+        state.wysiwyg.document.addEventListener('pointerdown', closeAllSelectMenus);
+      }
     });
   }
 
@@ -220,11 +215,6 @@
 
   function onVisualSelection(info) {
     updateToolbarState(info);
-    const note = $('#visualNote');
-    if (!note) return;
-    note.textContent = info && info.inBody
-      ? 'Editando el documento'
-      : 'Haz clic en el documento para escribir';
   }
 
   function onVisualScroll(info) {
@@ -399,7 +389,6 @@
   function persistSettings() {
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-        theme: state.theme,
         view: state.view,
         split: state.split,
         autoScroll: state.autoScroll,
@@ -416,25 +405,11 @@
     persistSettings();
   }
 
-  /* ---------- Tema, vistas y división ---------- */
-
-  function setTheme(theme, silent) {
-    state.theme = theme === 'dark' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', state.theme);
-    const use = $('#themeBtn use');
-    if (use) use.setAttribute('href', state.theme === 'dark' ? '#i-sun' : '#i-moon');
-    const btn = $('#themeBtn');
-    if (btn) btn.title = state.theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', state.theme === 'dark' ? '#06482e' : '#02874d');
-    if (!silent) {
-      saveSettingsDebounced();
-      App.toast(state.theme === 'dark' ? 'Tema oscuro activado.' : 'Tema claro activado.', 'info', 1800);
-    }
-  }
+  /* ---------- Vistas y división ---------- */
 
   function setView(view, silent) {
     if (VIEWS.indexOf(view) === -1) view = 'split';
+    closeAllSelectMenus();
     if (!silent) {
       if (state.lastEdited === 'visual') flushVisualToSource();
       else flushSourceToVisual();
@@ -462,6 +437,258 @@
     saveSettingsDebounced();
   }
 
+  /* ---------- Desplegables con vista previa ---------- */
+
+  const BLOCK_PREVIEW = {
+    p: { size: 16, weight: 400, meta: 'P' },
+    h1: { size: 34, weight: 700, meta: 'H1' },
+    h2: { size: 26, weight: 700, meta: 'H2' },
+    h3: { size: 21, weight: 700, meta: 'H3' },
+    h4: { size: 18, weight: 700, meta: 'H4' },
+    h5: { size: 16, weight: 700, meta: 'H5' },
+    h6: { size: 14, weight: 700, meta: 'H6', uppercase: true },
+    blockquote: { size: 16, weight: 400, meta: 'Cita', className: 'tb-option--quote' },
+    pre: { size: 13, weight: 400, meta: 'Pre', className: 'tb-option--pre' },
+  };
+
+  const selectApis = new Map();
+  let openSelectApi = null;
+
+  function getOptionPreview(kind, option) {
+    const value = option.value;
+    const style = {};
+    let className = '';
+    let meta = '';
+
+    if (!value) {
+      style.fontSize = '13px';
+      style.fontWeight = '600';
+      return { style: style, className: className, meta: meta };
+    }
+
+    if (kind === 'block') {
+      const preview = BLOCK_PREVIEW[value] || BLOCK_PREVIEW.p;
+      style.fontSize = preview.size + 'px';
+      style.fontWeight = String(preview.weight);
+      style.lineHeight = '1.15';
+      if (preview.uppercase) {
+        style.textTransform = 'uppercase';
+        style.letterSpacing = '.04em';
+      }
+      className = preview.className || '';
+      meta = preview.meta;
+    } else if (kind === 'font') {
+      style.fontFamily = value;
+      style.fontSize = '16px';
+      style.lineHeight = '1.4';
+    } else if (kind === 'size') {
+      const px = Number(value);
+      style.fontSize = (Number.isFinite(px) ? px : 16) + 'px';
+      style.lineHeight = '1.15';
+    }
+
+    return { style: style, className: className, meta: meta };
+  }
+
+  function syncSelectTrigger(select) {
+    const api = selectApis.get(select);
+    if (!api) return;
+    const option = select.options[select.selectedIndex];
+    const value = option ? option.textContent.trim() : '';
+    api.label.textContent = value;
+    api.trigger.setAttribute('aria-label', api.name + ': ' + value);
+    api.trigger.title = api.select.title || api.name;
+    api.rows.forEach(function (row) {
+      const selected = row.dataset.value === select.value;
+      row.classList.toggle('is-selected', selected);
+      row.setAttribute('aria-selected', selected ? 'true' : 'false');
+    });
+  }
+
+  function closeSelectMenu(api) {
+    if (!api) return;
+    api.menu.hidden = true;
+    api.trigger.setAttribute('aria-expanded', 'false');
+    if (openSelectApi === api) openSelectApi = null;
+  }
+
+  function closeAllSelectMenus() {
+    selectApis.forEach(function (api) { closeSelectMenu(api); });
+  }
+
+  function openSelectMenu(api, focusTarget) {
+    if (!api) return;
+    if (!api.menu.hidden) {
+      closeSelectMenu(api);
+      return;
+    }
+    closeAllSelectMenus();
+    closeDownloadMenu();
+    closeColorPop();
+    if (state.wysiwyg) state.wysiwyg.saveSelection();
+    syncSelectTrigger(api.select);
+
+    api.menu.hidden = false;
+    api.trigger.setAttribute('aria-expanded', 'true');
+    openSelectApi = api;
+
+    const rect = api.trigger.getBoundingClientRect();
+    const width = api.menu.offsetWidth;
+    const height = api.menu.offsetHeight;
+    const left = clamp(rect.left, 8, Math.max(8, global.innerWidth - width - 8));
+    let top = rect.bottom + 6;
+    if (top + height > global.innerHeight - 8) {
+      top = Math.max(8, rect.top - height - 6);
+    }
+    api.menu.style.left = Math.round(left) + 'px';
+    api.menu.style.top = Math.round(top) + 'px';
+
+    let target = null;
+    if (focusTarget === 'last') {
+      target = api.rows[api.rows.length - 1];
+    } else {
+      target = api.rows.find(function (row) { return row.classList.contains('is-selected'); }) || api.rows[0];
+    }
+    if (target) target.focus({ preventScroll: true });
+  }
+
+  function chooseSelectOption(api, row) {
+    const select = api.select;
+    closeSelectMenu(api);
+    select.value = row.dataset.value;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    syncSelectTrigger(select);
+    api.trigger.focus({ preventScroll: true });
+  }
+
+  function enhanceSelect(select) {
+    const wrap = select.closest('.tb-select');
+    if (!wrap || selectApis.has(select)) return;
+    const kind = select.id === 'blockSelect' ? 'block' : select.id === 'fontSelect' ? 'font' : 'size';
+    const name = wrap.dataset.label || select.title || 'Seleccionar';
+
+    select.hidden = true;
+    select.tabIndex = -1;
+    select.setAttribute('aria-hidden', 'true');
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'tb-trigger';
+    trigger.id = select.id + 'Trigger';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.setAttribute('aria-controls', select.id + 'Menu');
+    trigger.innerHTML = '<span class="tb-trigger-label"></span><svg class="icon tb-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>';
+
+    const menu = document.createElement('div');
+    menu.className = 'tb-menu tb-menu--' + kind;
+    menu.id = select.id + 'Menu';
+    menu.hidden = true;
+    menu.setAttribute('role', 'listbox');
+    menu.setAttribute('aria-labelledby', trigger.id);
+
+    const rows = Array.from(select.options).map(function (option) {
+      const row = document.createElement('div');
+      row.className = 'tb-option';
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', 'false');
+      row.tabIndex = -1;
+      row.dataset.value = option.value;
+
+      const preview = getOptionPreview(kind, option);
+      if (preview.className) row.classList.add(preview.className);
+
+      const sample = document.createElement('span');
+      sample.className = 'tb-option-sample';
+      sample.textContent = option.textContent.trim();
+      Object.keys(preview.style).forEach(function (key) {
+        sample.style[key] = preview.style[key];
+      });
+      row.appendChild(sample);
+
+      if (preview.meta) {
+        const meta = document.createElement('span');
+        meta.className = 'tb-option-meta';
+        meta.textContent = preview.meta;
+        row.appendChild(meta);
+      }
+
+      menu.appendChild(row);
+      return row;
+    });
+
+    const api = {
+      select: select,
+      wrap: wrap,
+      trigger: trigger,
+      menu: menu,
+      rows: rows,
+      label: trigger.querySelector('.tb-trigger-label'),
+      name: name,
+    };
+    selectApis.set(select, api);
+    wrap.appendChild(trigger);
+    wrap.appendChild(menu);
+
+    trigger.addEventListener('click', function (event) {
+      event.stopPropagation();
+      if (menu.hidden) openSelectMenu(api);
+      else closeSelectMenu(api);
+    });
+
+    trigger.addEventListener('keydown', function (event) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        openSelectMenu(api);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        openSelectMenu(api, 'last');
+      }
+    });
+
+    menu.addEventListener('keydown', function (event) {
+      const index = rows.indexOf(document.activeElement);
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        (rows[Math.min(rows.length - 1, index + 1)] || rows[0]).focus();
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        (rows[Math.max(0, index - 1)] || rows[rows.length - 1]).focus();
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        if (rows[0]) rows[0].focus();
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        if (rows[rows.length - 1]) rows[rows.length - 1].focus();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        closeSelectMenu(api);
+        trigger.focus();
+      } else if (event.key === 'Tab') {
+        closeSelectMenu(api);
+      }
+    });
+
+    rows.forEach(function (row) {
+      row.addEventListener('click', function () { chooseSelectOption(api, row); });
+      row.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          chooseSelectOption(api, row);
+        }
+      });
+    });
+
+    syncSelectTrigger(select);
+  }
+
+  function enhanceSelects() {
+    ['#blockSelect', '#fontSelect', '#sizeSelect'].forEach(function (selector) {
+      const select = $(selector);
+      if (select) enhanceSelect(select);
+    });
+  }
+
   /* ---------- Barra de herramientas ---------- */
 
   function updateToolbarState(info) {
@@ -478,6 +705,7 @@
       const has = $$('option', block).some(function (option) { return option.value === value; });
       if (has) block.value = value;
       else if (value === 'div' || value === '') block.value = 'p';
+      syncSelectTrigger(block);
     }
     const linkBtn = $('#linkBtn');
     if (linkBtn) linkBtn.classList.toggle('is-active', !!info.link);
@@ -682,17 +910,6 @@
     applyRaw('', { resetScroll: true });
     updateEncodingBtn();
     App.toast('Página nueva en blanco.', 'success');
-  }
-
-  async function loadDemo() {
-    if (!(await confirmReplace('Cargar demostración', 'Se sustituirá el documento actual por el contenido de demostración.'))) return;
-    pushHistory('Cargar demostración');
-    state.baseTitle = 'sin-titulo';
-    state.titleLocked = false;
-    state.encoding = false;
-    applyRaw(App.DEMO_HTML, { resetScroll: true });
-    updateEncodingBtn();
-    App.toast('Demostración cargada. Prueba las reglas de limpieza.', 'success', 4500);
   }
 
   function addLipsum() {
@@ -1126,9 +1343,6 @@
       });
     }
 
-    const demoBtn = $('#demoBtn');
-    if (demoBtn) demoBtn.addEventListener('click', loadDemo);
-
     const downloadBtn = $('#downloadBtn');
     if (downloadBtn) {
       downloadBtn.addEventListener('click', function (event) {
@@ -1142,13 +1356,6 @@
       downloadMenu.addEventListener('click', function (event) {
         const item = event.target.closest('[data-export]');
         if (item) exportAs(item.dataset.export);
-      });
-    }
-
-    const themeBtn = $('#themeBtn');
-    if (themeBtn) {
-      themeBtn.addEventListener('click', function () {
-        setTheme(state.theme === 'dark' ? 'light' : 'dark');
       });
     }
 
@@ -1200,6 +1407,7 @@
       font.addEventListener('change', function () {
         if (state.wysiwyg && font.value) state.wysiwyg.setFontFamily(font.value);
         font.value = '';
+        syncSelectTrigger(font);
       });
     }
 
@@ -1208,6 +1416,7 @@
       size.addEventListener('change', function () {
         if (state.wysiwyg && size.value) state.wysiwyg.setFontSize(size.value);
         size.value = '';
+        syncSelectTrigger(size);
       });
     }
 
@@ -1453,6 +1662,12 @@
       if (event.defaultPrevented) return;
 
       if (event.key === 'Escape') {
+        if (openSelectApi) {
+          const api = openSelectApi;
+          closeSelectMenu(api);
+          api.trigger.focus({ preventScroll: true });
+          return;
+        }
         const pop = $('#colorPop');
         if (pop && !pop.hidden) {
           closeColorPop();
@@ -1500,6 +1715,7 @@
 
     document.addEventListener('click', function (event) {
       if (!event.target.closest('.menu-anchor')) closeDownloadMenu();
+      if (!event.target.closest('.tb-select')) closeAllSelectMenus();
       if (!event.target.closest('#colorPop') && !event.target.closest('#textColorBtn') && !event.target.closest('#highlightBtn')) {
         closeColorPop();
       }
@@ -1539,6 +1755,7 @@
       resizeTimer = setTimeout(function () {
         if (state.cm) state.cm.refresh();
         closeColorPop();
+        closeAllSelectMenus();
       }, 180);
     });
   }
@@ -1580,7 +1797,6 @@
 
   function init() {
     state.settings = readSettings();
-    state.theme = detectTheme();
     const creditYear = document.querySelector('#creditYear');
     if (creditYear) creditYear.textContent = String(new Date().getFullYear());
     state.view = VIEWS.indexOf(state.settings.view) !== -1 ? state.settings.view : 'split';
@@ -1593,7 +1809,7 @@
     }
 
     const draft = loadDraft();
-    state.initialHtml = draft ? draft.html : App.DEMO_HTML;
+    state.initialHtml = draft ? draft.html : '';
     if (draft) {
       state.baseTitle = draft.baseTitle || draft.title || 'sin-titulo';
       state.titleLocked = !!draft.titleLocked;
@@ -1602,12 +1818,12 @@
       state.savedAt = draft.savedAt || null;
     }
 
-    setTheme(state.theme, true);
     applySplit(state.split);
     setupCodeMirror(state.initialHtml);
     setupWysiwyg();
     buildCleanGrid();
     setupFindReplace();
+    enhanceSelects();
 
     bindTopbar();
     bindSourceActions();
@@ -1625,7 +1841,7 @@
     updateEncodingBtn();
     setAutoScroll(state.autoScroll, true);
     setView(state.view, true);
-    setDockOpen(true);
+    setDockOpen(false);
     setDockTab('clean');
     updateHistoryButtons();
     refreshMeta();

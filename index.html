@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-theme="light">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -44,15 +44,12 @@
     <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
     <symbol id="i-file-plus" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6M9 15h6"/></symbol>
     <symbol id="i-wand" viewBox="0 0 24 24"><path d="m3 21 12-12"/><path d="M16 3v4M14 5h4M18 9v2M20 11v2M10 3v2M11 4h-2M19 15l1 1M6 7v2M7 8H5"/></symbol>
-    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15v4M17 17h4M5 3v3M3.5 4.5h3"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-13.5-4.5L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 13.5 4.5L20 15"/><path d="M20 20v-5h-5"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-5.5-5.5"/></symbol>
-    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></symbol>
-    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
     <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2.2-2.5 4"/><circle cx="12" cy="17.5" r=".7" fill="currentColor" stroke="none"/></symbol>
     <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
     <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
@@ -82,12 +79,7 @@
 
   <header class="topbar">
     <div class="brand">
-      <img class="brand-logo" src="assets/img/beaypepe-logo.png" alt="BeayPePeTools" width="160" height="35">
-      <span class="brand-sep" aria-hidden="true"></span>
       <span class="brand-name">Editor <strong>HTML</strong></span>
-      <span class="chip chip--local" title="Tus documentos se quedan en este navegador">
-        <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> 100% local
-      </span>
     </div>
 
     <div class="topbar-center">
@@ -109,9 +101,6 @@
         <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span class="btn-label">Abrir</span>
       </button>
       <input type="file" id="fileInput" accept=".html,.htm,.docx,.txt,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
-      <button type="button" class="btn btn--ghost" id="demoBtn" title="Cargar contenido de demostración">
-        <svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg><span class="btn-label">Demo</span>
-      </button>
       <div class="menu-anchor">
         <button type="button" class="btn btn--primary" id="downloadBtn" aria-haspopup="menu" aria-expanded="false">
           <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Descargar</span>
@@ -132,9 +121,6 @@
           </button>
         </div>
       </div>
-      <button type="button" class="iconbtn" id="themeBtn" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">
-        <svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg>
-      </button>
       <button type="button" class="iconbtn" id="helpBtn" title="Atajos y ayuda" aria-label="Abrir ayuda">
         <svg class="icon" aria-hidden="true"><use href="#i-help"/></svg>
       </button>
@@ -144,15 +130,6 @@
   <main class="app-shell">
     <div class="workspace" id="workspace" data-view="split" style="--split: 50%">
       <section class="pane pane--visual" id="visualPane" aria-label="Editor visual WYSIWYG">
-        <div class="pane-head pane-head--visual">
-          <div class="pane-id">
-            <span class="pane-dot pane-dot--visual" aria-hidden="true"></span>
-            <span class="pane-name">Visual</span>
-            <span class="pane-sub">WYSIWYG</span>
-          </div>
-          <div class="pane-head-note" id="visualNote">Haz clic en el documento para escribir</div>
-        </div>
-
         <div class="toolbar" id="formatToolbar" role="toolbar" aria-label="Formato de texto">
           <div class="tb-group">
             <button type="button" class="tbtn" data-cmd="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg class="icon"><use href="#i-undo"/></svg></button>
@@ -160,8 +137,8 @@
           </div>
 
           <div class="tb-group">
-            <label class="tb-select tb-select--block">
-              <span class="sr-only">Estilo de párrafo</span>
+            <div class="tb-select tb-select--block" data-label="Formato">
+              <label class="sr-only" for="blockSelect">Formato</label>
               <select id="blockSelect" title="Estilo de párrafo">
                 <option value="p">Párrafo</option>
                 <option value="h1">Título 1</option>
@@ -173,10 +150,9 @@
                 <option value="blockquote">Cita</option>
                 <option value="pre">Preformateado</option>
               </select>
-              <svg class="icon tb-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
-            </label>
-            <label class="tb-select tb-select--font">
-              <span class="sr-only">Tipografía</span>
+            </div>
+            <div class="tb-select tb-select--font" data-label="Tipografía">
+              <label class="sr-only" for="fontSelect">Tipografía</label>
               <select id="fontSelect" title="Tipografía">
                 <option value="">Tipografía</option>
                 <option value="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">Sistema</option>
@@ -188,10 +164,9 @@
                 <option value="'Courier New', Courier, monospace">Courier</option>
                 <option value="ui-monospace, Consolas, 'Courier New', monospace">Monoespaciada</option>
               </select>
-              <svg class="icon tb-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
-            </label>
-            <label class="tb-select tb-select--size">
-              <span class="sr-only">Tamaño de letra</span>
+            </div>
+            <div class="tb-select tb-select--size" data-label="Tamaño">
+              <label class="sr-only" for="sizeSelect">Tamaño</label>
               <select id="sizeSelect" title="Tamaño de letra">
                 <option value="">Tamaño</option>
                 <option value="12">12 px</option>
@@ -202,8 +177,7 @@
                 <option value="32">32 px</option>
                 <option value="48">48 px</option>
               </select>
-              <svg class="icon tb-chevron" aria-hidden="true"><use href="#i-chevron-down"/></svg>
-            </label>
+            </div>
           </div>
 
           <div class="tb-group">
@@ -293,7 +267,7 @@
           <textarea id="sourceEditor" aria-label="Código HTML"></textarea>
         </div>
 
-        <div class="dock" id="dock">
+        <div class="dock is-collapsed" id="dock">
           <div class="dock-head">
             <div class="dock-tabs" role="tablist" aria-label="Herramientas del código">
               <button type="button" class="dock-tab is-active" data-dock="clean" role="tab" aria-selected="true" aria-controls="dockClean">
@@ -306,10 +280,10 @@
             </div>
             <div class="dock-head-actions">
               <button type="button" class="btn btn--clean" id="cleanBtn" title="Ejecutar todas las reglas marcadas (Ctrl+Shift+K)">
-                <svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Clean
+                <svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Limpieza
               </button>
-              <button type="button" class="iconbtn" id="dockToggle" aria-label="Contraer herramientas" aria-expanded="true" title="Contraer herramientas">
-                <svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+              <button type="button" class="iconbtn" id="dockToggle" aria-label="Expandir herramientas" aria-expanded="false" title="Expandir herramientas">
+                <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
               </button>
             </div>
           </div>
@@ -317,7 +291,7 @@
           <div class="dock-body" id="dockBody">
             <div class="dock-panel is-active" id="dockClean" data-dock-panel="clean" role="tabpanel">
               <div class="dock-help">
-                <span>Marca las reglas y pulsa <strong>Clean</strong>, o usa <svg class="icon icon--xs" aria-hidden="true"><use href="#i-arrow-right"/></svg> para ejecutar solo una. Los ajustes y las reglas de búsqueda se guardan en este navegador.</span>
+                <span>Marca las reglas y pulsa <strong>Limpieza</strong>, o usa <svg class="icon icon--xs" aria-hidden="true"><use href="#i-arrow-right"/></svg> para ejecutar solo una. Los ajustes y las reglas de búsqueda se guardan en este navegador.</span>
                 <button type="button" class="linkbtn" id="toggleAllClean">Alternar todas</button>
               </div>
               <div class="clean-grid" id="cleanGrid"></div>
@@ -345,7 +319,7 @@
       <span class="status-item" id="saveStatus"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-cloud-check"/></svg> Guardado local</span>
       <span class="status-item status-item--muted" id="docSize">0 KB</span>
     </div>
-    <div class="status-credit">© 2018 - <span id="creditYear">2026</span> <a href="https://beaypepe.com" target="_blank" rel="noopener">BeayPePe</a></div>
+    <div class="status-credit">© 2018 - <span id="creditYear">2026</span> <a href="https://beaypepe.com" target="_blank" rel="noopener">BeayPepe</a></div>
     <div class="status-right">
       <span class="status-item" id="stats">0 caracteres · 0 palabras</span>
       <span class="status-sep" aria-hidden="true"></span>
@@ -507,7 +481,7 @@
       </section>
       <section>
         <h3><svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Limpieza</h3>
-        <p><strong>Clean</strong> aplica todas las reglas marcadas y además normaliza el marcado (cierra etiquetas, corrige anidamientos). La regla <strong>Scripts y estilos</strong> está desactivada por defecto: actívala si quieres eliminar bloques <code>&lt;script&gt;</code> y <code>&lt;style&gt;</code>.</p>
+        <p><strong>Limpieza</strong> aplica todas las reglas marcadas y además normaliza el marcado (cierra etiquetas, corrige anidamientos). La regla <strong>Scripts y estilos</strong> está desactivada por defecto: actívala si quieres eliminar bloques <code>&lt;script&gt;</code> y <code>&lt;style&gt;</code>.</p>
         <p>Las reglas de búsqueda y reemplazo admiten expresiones regulares. Una regex inválida no modifica el documento y muestra un aviso.</p>
       </section>
       <section>
