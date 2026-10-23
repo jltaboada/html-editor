@@ -6,7 +6,10 @@ original; los textos completos están disponibles en los repositorios indicados.
 
 | Librería | Versión | Archivos | Licencia |
 | --- | --- | --- | --- |
-| [CodeMirror](https://github.com/codemirror/codemirror5) | 5.65.16 | `codemirror/codemirror.min.js`, `codemirror/codemirror.min.css`, modos `xml`, `javascript`, `css`, `htmlmixed` y addons `fold/xml-fold`, `edit/matchtags`, `edit/closetag`, `selection/active-line` | MIT |
+| [CodeMirror](https://github.com/codemirror/codemirror5) | 5.65.16 | `codemirror/codemirror.min.js`, `codemirror/codemirror.min.css`, modos `xml`, `javascript`, `css`, `htmlmixed`, `markdown` y addons `fold/xml-fold`, `edit/matchtags`, `edit/closetag`, `selection/active-line` | MIT |
+| [marked](https://github.com/markedjs/marked) | 15.0.12 | `marked.umd.min.js` (Markdown → HTML) | MIT |
+| [Turndown](https://github.com/mixmark-io/turndown) | 7.2.4 | `turndown.min.js` (HTML → Markdown) | MIT |
+| [turndown-plugin-gfm](https://github.com/mixmark-io/turndown-plugin-gfm) | 1.0.2 | `turndown-plugin-gfm.min.js` (tablas, tachado y listas de tareas) | MIT |
 | [JSZip](https://github.com/Stuk/jszip) | 3.10.1 | `jszip.min.js` | MIT o GPLv3 (dual) |
 | [Mammoth.js](https://github.com/mwilliamson/mammoth.js) | 1.8.0 | `mammoth.browser.min.js` | BSD-2-Clause |
 | [html-docx-js](https://github.com/evidenceprime/html-docx-js) | 0.3.1 | `html-docx.js` | MIT |

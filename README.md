@@ -1,10 +1,10 @@
-# Editor HTML · WYSIWYG + código en vivo
+# Editor WYSIWYG · BeayPePeTools
 
-Editor HTML que funciona **100% en el navegador**, sin servidor ni instalación: un panel visual
-(WYSIWYG) y un panel de código sincronizados en tiempo real, limpiador de HTML, buscar y
-reemplazar con expresiones regulares, emoticonos, caracteres especiales, vídeos incrustados,
-impresión limpia del documento, importación de `.html` / `.docx` / `.txt` y exportación a HTML,
-ZIP con imágenes o Word.
+Editor WYSIWYG que funciona **100% en el navegador**, sin servidor ni instalación: un panel visual
+sincronizado en tiempo real con un panel de código que puede mostrarse en **HTML o Markdown**,
+limpiador de HTML, buscar y reemplazar con expresiones regulares, emoticonos, caracteres
+especiales, vídeos incrustados, impresión limpia del documento, importación de `.html` / `.md` /
+`.docx` / `.txt` y exportación a HTML, Markdown, ZIP con imágenes o Word.
 
 Es una reimplementación original inspirada en las herramientas del editor online de
 [HTML-Online](https://html-online.com/html-editor/). No contiene código, textos ni recursos
@@ -18,8 +18,9 @@ verde `#02874d`, marrón `#5f452a` y la fuente Varela Round.
 ## Cómo usarlo
 
 1. Abre `index.html` con doble clic en cualquier navegador moderno (Chrome, Edge, Firefox, Safari).
-2. Empieza a escribir en el panel **Visual** o edita el HTML en el panel **Código**: ambos se
-   mantienen sincronizados.
+2. Empieza a escribir en el panel **Visual** o edita el código en el panel de la derecha. El
+   conmutador **HTML | MD** cambia ese panel entre HTML y Markdown; los tres puntos de vista
+   (visual, HTML y Markdown) se mantienen sincronizados.
 
 No hace falta compilar nada ni usar `npm`. Si prefieres servirlo por HTTP (por ejemplo para otro
 dispositivo de la red local), cualquier servidor estático sirve:
@@ -70,6 +71,12 @@ python -m http.server 8080
   actualiza cada pocos milisegundos y llega ya indentado, sin esperas ni reindentados posteriores.
   Al pegar en el panel de código también se ordena solo; *Indentar* sigue disponible y *Comprimir*
   se respeta hasta que vuelvas a editar.
+- **HTML o Markdown**: el conmutador del panel de código permite editar el documento como HTML o
+  como Markdown. Escribir Markdown actualiza el panel visual al momento, y lo que escribes en el
+  visual se refleja también en Markdown. El botón **HTML incrustado** decide si lo que Markdown no
+  sabe representar (colores, tipografías, vídeos, fórmulas…) se conserva como HTML dentro del
+  Markdown o se descarta para dejar un Markdown limpio. Cada modo conserva su historial y su cursor,
+  y el documento se puede descargar como `.md`.
 - **Nombre del archivo**: haz clic en el nombre que aparece encima del código para cambiarlo
   (solo la parte del nombre: la extensión `.html` es fija). Se usa para descargar y se recuerda.
 - **Memoria de trabajo**: el borrador se guarda solo (también al cerrar o recargar el navegador) y,
@@ -112,6 +119,7 @@ assets/js/cleaner.js       Reglas de limpieza, indentado, compresión y entidade
 assets/js/wysiwyg.js       Editor visual sobre un iframe aislado
 assets/js/files.js         Lectura de archivos y exportación HTML/ZIP/DOCX
 assets/js/findreplace.js   Panel de buscar y reemplazar
+assets/js/markdown.js      Conversión HTML ⇄ Markdown (marked + Turndown)
 assets/js/app.js           Integración general, estado, sincronización y eventos
 vendor/                    Librerías de terceros (ver vendor/LICENSES.md)
 ```
@@ -130,11 +138,17 @@ vendor/                    Librerías de terceros (ver vendor/LICENSES.md)
   en tiempo de ejecución.
 - La hoja de impresión se carga en un iframe con `sandbox` sin `allow-scripts`: aunque el
   documento contenga `<script>`, no se ejecuta al imprimir.
+- Markdown no puede representar todo el HTML. Con **HTML incrustado** activado la conversión es
+  reversible; desactivado se obtiene Markdown estándar y se pierden estilos, colores y elementos
+  que no tienen equivalente (los vídeos se convierten en un enlace).
+- Al importar un `.md` se convierte a HTML con marked; las imágenes incrustadas como `data:` se
+  mantienen como HTML dentro de Markdown para no inflar el texto.
 
 ## Dependencias
 
 Todas las librerías están incluidas en `vendor/` y se usan con sus licencias originales:
-CodeMirror 5.65.16 (MIT), JSZip 3.10.1 (MIT/GPLv3), Mammoth 1.8.0 (BSD-2-Clause),
+CodeMirror 5.65.16 (MIT, con los modos HTML y Markdown), marked 15.0.12 (MIT), Turndown 7.2.4
+(MIT), turndown-plugin-gfm 1.0.2 (MIT), JSZip 3.10.1 (MIT/GPLv3), Mammoth 1.8.0 (BSD-2-Clause),
 html-docx-js 0.3.1 (MIT) y js-beautify 1.15.1 (MIT). La interfaz usa la fuente
 [Varela Round](https://github.com/alefalefalef/Varela-Round-Hebrew) (SIL OFL 1.1), incluida en
 `assets/fonts/`. Consulta `vendor/LICENSES.md` para más detalle.

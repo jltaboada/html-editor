@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Editor HTML · BeayPePeTools</title>
-  <meta name="description" content="Editor HTML online con vista visual y código sincronizados, limpiador de HTML, buscar y reemplazar, importación de DOCX y exportación a HTML o Word. Todo en tu navegador.">
+  <title>Editor WYSIWYG · BeayPePeTools</title>
+  <meta name="description" content="Editor WYSIWYG online con vista visual y código HTML o Markdown sincronizados, limpiador de HTML, buscar y reemplazar, emoticonos, vídeo, impresión, importación de DOCX y exportación a HTML, Markdown o Word. Todo en tu navegador.">
   <meta name="theme-color" content="#02874d">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2302874d'/%3E%3Cpath d='M13 10l-5 6 5 6M19 10l5 6-5 6' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css">
@@ -83,7 +83,7 @@
 
   <header class="topbar">
     <div class="brand">
-      <span class="brand-name">Editor <strong>HTML</strong></span>
+      <span class="brand-name">Editor <strong>WYSIWYG</strong></span>
     </div>
 
     <div class="topbar-center">
@@ -101,10 +101,10 @@
     </div>
 
     <div class="topbar-actions">
-      <button type="button" class="btn btn--ghost" id="openBtn" title="Abrir un archivo .html, .htm, .docx o .txt">
+      <button type="button" class="btn btn--ghost" id="openBtn" title="Abrir un archivo .html, .htm, .md, .docx o .txt">
         <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span class="btn-label">Abrir</span>
       </button>
-      <input type="file" id="fileInput" accept=".html,.htm,.docx,.txt,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      <input type="file" id="fileInput" accept=".html,.htm,.md,.markdown,.docx,.txt,text/html,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
       <div class="menu-anchor">
         <button type="button" class="btn btn--primary" id="downloadBtn" aria-haspopup="menu" aria-expanded="false">
           <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span class="btn-label">Descargar</span>
@@ -118,6 +118,10 @@
           <button type="button" role="menuitem" data-export="zip">
             <svg class="icon" aria-hidden="true"><use href="#i-image-plus"/></svg>
             <span><strong>HTML + imágenes</strong><small>.zip con /images si hay datos incrustados</small></span>
+          </button>
+          <button type="button" role="menuitem" data-export="md">
+            <svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg>
+            <span><strong>Markdown</strong><small>Documento .md</small></span>
           </button>
           <button type="button" role="menuitem" data-export="docx">
             <svg class="icon" aria-hidden="true"><use href="#i-doc"/></svg>
@@ -271,11 +275,20 @@
             <span class="toolbar-sep" aria-hidden="true"></span>
             <button type="button" class="iconbtn" id="copyBtn" title="Copiar el código al portapapeles" aria-label="Copiar código"><svg class="icon"><use href="#i-copy"/></svg></button>
             <span class="char-pill" id="charCount" title="Caracteres en el código">0</span>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <div class="langswitch" role="group" aria-label="Lenguaje del panel de código">
+              <button type="button" class="langswitch-btn is-active" data-lang="html" aria-pressed="true" title="Ver y editar el HTML">HTML</button>
+              <button type="button" class="langswitch-btn" data-lang="md" aria-pressed="false" title="Ver y editar el Markdown">MD</button>
+            </div>
+            <button type="button" class="md-chip" id="mdKeepBtn" title="Conservar como HTML lo que Markdown no representa (colores, fuentes, vídeos)" aria-pressed="true" hidden>HTML incrustado</button>
           </div>
         </div>
 
         <div class="cm-wrap" id="cmWrap">
           <textarea id="sourceEditor" aria-label="Código HTML"></textarea>
+        </div>
+        <div class="cm-wrap cm-wrap--md" id="mdWrap" hidden>
+          <textarea id="mdEditor" aria-label="Código Markdown" spellcheck="false"></textarea>
         </div>
 
         <div class="dock is-collapsed" id="dock">
@@ -682,6 +695,11 @@
         <p>Haz clic en el nombre que aparece encima del código para renombrar el archivo (sin la extensión): se guarda y se descarga con ese nombre.</p>
       </section>
       <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg> HTML y Markdown</h3>
+        <p>El conmutador <strong>HTML | MD</strong> del panel de código cambia entre los dos lenguajes. En modo MD escribes Markdown y el panel visual se actualiza al momento; lo que edites en el visual aparece también como Markdown. Cada modo conserva su propio historial y su posición.</p>
+        <p>El botón <strong>HTML incrustado</strong> (solo en modo MD) decide qué pasa con lo que Markdown no sabe representar. Activado, esos fragmentos (colores, tipografías, vídeos, fórmulas…) viajan como HTML dentro del Markdown y no se pierden al volver a HTML. Desactivado, el Markdown queda limpio y solo con sintaxis estándar. Puedes descargar el documento como <code>.md</code> desde el menú <strong>Descargar</strong>.</p>
+      </section>
+      <section>
         <h3><svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Limpieza</h3>
         <p><strong>Limpieza</strong> aplica todas las reglas marcadas y además normaliza el marcado (cierra etiquetas, corrige anidamientos). La regla <strong>Scripts y estilos</strong> está desactivada por defecto: actívala si quieres eliminar bloques <code>&lt;script&gt;</code> y <code>&lt;style&gt;</code>.</p>
         <p>Las reglas de búsqueda y reemplazo admiten expresiones regulares. Una regex inválida no modifica el documento y muestra un aviso.</p>
@@ -718,6 +736,7 @@
   <script src="vendor/codemirror/mode/javascript/javascript.min.js"></script>
   <script src="vendor/codemirror/mode/css/css.min.js"></script>
   <script src="vendor/codemirror/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="vendor/codemirror/mode/markdown/markdown.min.js"></script>
   <script src="vendor/codemirror/addon/fold/xml-fold.min.js"></script>
   <script src="vendor/codemirror/addon/edit/matchtags.min.js"></script>
   <script src="vendor/codemirror/addon/edit/closetag.min.js"></script>
@@ -728,6 +747,9 @@
   <script src="vendor/jszip.min.js"></script>
   <script src="vendor/mammoth.browser.min.js"></script>
   <script src="vendor/html-docx.js"></script>
+  <script src="vendor/marked.umd.min.js"></script>
+  <script src="vendor/turndown.min.js"></script>
+  <script src="vendor/turndown-plugin-gfm.min.js"></script>
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/emojis.js"></script>
   <script src="assets/js/demo.js"></script>
@@ -735,6 +757,7 @@
   <script src="assets/js/wysiwyg.js"></script>
   <script src="assets/js/files.js"></script>
   <script src="assets/js/findreplace.js"></script>
+  <script src="assets/js/markdown.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

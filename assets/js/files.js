@@ -99,7 +99,18 @@
       return { html: result.html, title, kind: 'docx', notes };
     }
 
-    if (ext === 'txt' || ext === 'text' || ext === 'md') {
+    if (ext === 'md' || ext === 'markdown') {
+      const text = await file.text();
+      const html = App.Markdown && App.Markdown.available ? App.Markdown.toHtml(text) : '';
+      return {
+        html: html || textToHtml(text),
+        title,
+        kind: 'markdown',
+        notes: [html ? 'Markdown convertido a HTML.' : 'Markdown importado como texto plano.'],
+      };
+    }
+
+    if (ext === 'txt' || ext === 'text') {
       const text = await file.text();
       return {
         html: textToHtml(text),
@@ -113,7 +124,7 @@
       throw new Error('El formato .doc antiguo no se puede convertir en el navegador. Guarda el documento como .docx e inténtalo de nuevo.');
     }
 
-    throw new Error('Formato no compatible. Usa .html, .htm, .docx o .txt.');
+    throw new Error('Formato no compatible. Usa .html, .htm, .md, .docx o .txt.');
   }
 
   function buildImageRegex() {

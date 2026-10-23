@@ -46,6 +46,14 @@
     colorTarget: 'text',
     print: { size: 'a4', orientation: 'portrait', margins: 'normal' },
     spellcheck: true,
+    codeLang: 'html',
+    mdKeepHtml: true,
+    mdEditor: null,
+    initialMd: null,
+    mdValue: '',
+    mdStale: true,
+    suppressMd: false,
+    applyingMarkdown: false,
     imageData: null,
     imageEditing: null,
     history: [],
@@ -149,6 +157,7 @@
       state.lastEdited = 'source';
       markDirty();
       syncSourceDebounced();
+      markMarkdownStale();
       scheduleMeta();
     });
 
@@ -181,6 +190,7 @@
     }
     if (!opts.fromVisual) state.lastEdited = 'source';
     updateCursorPos();
+    updateCharPill();
   }
 
   const FORMAT_MAX_CHARS = 400000;
@@ -210,6 +220,7 @@
     if (state.cm.getValue() === value) return;
     if (state.compressed) state.compressed = false;
     setSource(value, { fromVisual: true });
+    markMarkdownStale();
     visualSyncLast = Date.now();
   }
 
@@ -217,6 +228,197 @@
     syncSourceDebounced.cancel();
     if (!state.wysiwyg || !state.wysiwyg.isReady || !state.cm) return;
     state.wysiwyg.setHtml(state.cm.getValue());
+  }
+
+  /* ---------- Panel de código Markdown ---------- */
+
+  function markdownReady() {
+    return !!(state.mdEditor && App.Markdown && App.Markdown.available);
+  }
+
+  function markdownActive() {
+    return state.codeLang === 'md';
+  }
+
+  function updateCharPill() {
+    const pill = $('#charCount');
+    if (!pill) return;
+    if (markdownActive() && state.mdEditor) {
+      pill.textContent = state.mdEditor.getValue().length.toLocaleString('es-ES');
+      pill.title = 'Caracteres en el Markdown';
+    } else if (state.cm) {
+      pill.textContent = state.cm.getValue().length.toLocaleString('es-ES');
+      pill.title = 'Caracteres en el código';
+    }
+  }
+
+  function markMarkdownStale() {
+    if (!markdownReady()) return;
+    state.mdStale = true;
+    if (markdownActive()) scheduleMarkdownRefresh();
+  }
+
+  function refreshMarkdown(force) {
+    if (!markdownReady()) return;
+    if (!force && !state.mdStale) return;
+    if (state.applyingMarkdown) return;
+    const html = state.cm ? state.cm.getValue() : '';
+    const markdown = App.Markdown.toMarkdown(html, { keepHtml: state.mdKeepHtml });
+    state.mdValue = markdown;
+    state.mdStale = false;
+    const info = state.mdEditor.getScrollInfo();
+    state.suppressMd = true;
+    try { state.mdEditor.setValue(markdown); } finally { state.suppressMd = false; }
+    state.mdEditor.scrollTo(null, info.top);
+  }
+
+  function applyMarkdown(markdown) {
+    if (!state.wysiwyg || !state.wysiwyg.isReady) return;
+    const html = App.Markdown.toHtml(markdown);
+    const value = formatHtml(html || '');
+    state.applyingMarkdown = true;
+    try {
+      state.mdValue = markdown;
+      state.mdStale = false;
+      if (state.compressed) state.compressed = false;
+      state.lastEdited = 'source';
+      state.suppressSource = true;
+      try {
+        if (state.cm && state.cm.getValue() !== value) state.cm.setValue(value);
+      } finally {
+        state.suppressSource = false;
+      }
+      cancelVisualSync();
+      state.wysiwyg.setHtml(value);
+      updateCursorPos();
+      updateCharPill();
+    } finally {
+      state.applyingMarkdown = false;
+    }
+    markDirty();
+    refreshMeta();
+    scheduleMeta();
+  }
+
+  const applyMarkdownDebounced = App.debounce(function () {
+    if (!markdownActive() || !state.mdEditor) return;
+    const markdown = state.mdEditor.getValue();
+    if (markdown === state.mdValue) return;
+    applyMarkdown(markdown);
+  }, 180);
+
+  const scheduleMarkdownRefresh = App.debounce(function () {
+    if (markdownActive()) refreshMarkdown(true);
+  }, 220);
+
+  function setCodeLang(lang, silent) {
+    applyMarkdownDebounced.flush();
+    const next = lang === 'md' && markdownReady() ? 'md' : 'html';
+    if (next === state.codeLang && !silent) {
+      if (next === 'md' && state.mdStale) refreshMarkdown(true);
+      return;
+    }
+    state.codeLang = next;
+    if (next === 'md') {
+      applyMarkdownDebounced.flush();
+      refreshMarkdown(state.mdStale);
+    }
+    const pane = $('#sourcePane');
+    if (pane) pane.classList.toggle('is-md', next === 'md');
+    const cmWrap = $('#cmWrap');
+    const mdWrap = $('#mdWrap');
+    if (cmWrap) cmWrap.hidden = next === 'md';
+    if (mdWrap) mdWrap.hidden = next !== 'md';
+    $$('.langswitch-btn').forEach(function (button) {
+      const active = button.dataset.lang === next;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    const keep = $('#mdKeepBtn');
+    if (keep) {
+      keep.hidden = next !== 'md';
+      keep.classList.toggle('is-active', state.mdKeepHtml);
+      keep.setAttribute('aria-pressed', state.mdKeepHtml ? 'true' : 'false');
+    }
+    const ext = document.querySelector('.file-ext');
+    if (ext) ext.textContent = next === 'md' ? '.md' : '.html';
+    updateCharPill();
+    updateHistoryButtons();
+    const editor = next === 'md' ? state.mdEditor : state.cm;
+    if (editor) {
+      requestAnimationFrame(function () {
+        editor.refresh();
+        if (!silent) editor.focus();
+      });
+    }
+    updateCursorPos();
+    if (!silent) {
+      saveSettingsDebounced();
+      scheduleAutoSave();
+    }
+  }
+
+  function setMdKeep(on, silent) {
+    state.mdKeepHtml = on !== false;
+    const button = $('#mdKeepBtn');
+    if (button) {
+      button.classList.toggle('is-active', state.mdKeepHtml);
+      button.setAttribute('aria-pressed', state.mdKeepHtml ? 'true' : 'false');
+      button.title = state.mdKeepHtml
+        ? 'HTML incrustado activado: lo que Markdown no representa se conserva tal cual'
+        : 'HTML incrustado desactivado: el Markdown queda limpio y sin estilos';
+    }
+    if (!silent) {
+      applyMarkdownDebounced.flush();
+      refreshMarkdown(true);
+      persistSettings();
+      App.toast(state.mdKeepHtml
+        ? 'Markdown con HTML incrustado: no se pierde ningún estilo.'
+        : 'Markdown limpio: los estilos que Markdown no admite se descartan.', 'info', 3200);
+    }
+  }
+
+  function setupMarkdownEditor(initialMarkdown) {
+    if (!App.Markdown || !App.Markdown.available || !global.CodeMirror) return;
+    const textarea = $('#mdEditor');
+    if (!textarea) return;
+    state.mdEditor = global.CodeMirror.fromTextArea(textarea, {
+      mode: 'markdown',
+      lineNumbers: true,
+      lineWrapping: true,
+      indentUnit: 2,
+      tabSize: 2,
+      indentWithTabs: false,
+      styleActiveLine: true,
+      viewportMargin: 30,
+      extraKeys: {
+        'Ctrl-S': function () { saveDraft(true); },
+        'Cmd-S': function () { saveDraft(true); },
+        'Shift-Ctrl-F': function () { exportAs('html'); },
+        'Shift-Cmd-F': function () { exportAs('html'); },
+      },
+    });
+    state.mdEditor.setValue(initialMarkdown || '');
+    state.mdEditor.clearHistory();
+    state.mdEditor.on('change', function () {
+      if (state.suppressMd) return;
+      state.lastEdited = 'source';
+      markDirty();
+      updateCharPill();
+      applyMarkdownDebounced();
+    });
+    state.mdEditor.on('focus', function () { state.lastEdited = 'source'; });
+    state.mdEditor.on('cursorActivity', updateCursorPos);
+    state.mdEditor.on('scroll', onSourceScroll);
+    state.mdStale = false;
+  }
+
+  function bindMarkdownSwitch() {
+    $$('.langswitch-btn').forEach(function (button) {
+      button.addEventListener('click', function () { setCodeLang(button.dataset.lang); });
+    });
+    const keep = $('#mdKeepBtn');
+    if (keep) keep.addEventListener('click', function () { setMdKeep(!state.mdKeepHtml); });
   }
 
   /* ---------- Editor visual ---------- */
@@ -272,8 +474,9 @@
   }
 
   function onSourceScroll() {
-    if (!state.autoScroll || !state.wysiwyg || !state.wysiwyg.isReady || state.scrollLock === 'source') return;
-    const size = state.cm.getScrollInfo();
+    const editor = activeSourceEditor();
+    if (!state.autoScroll || !state.wysiwyg || !state.wysiwyg.isReady || state.scrollLock === 'source' || !editor) return;
+    const size = editor.getScrollInfo();
     const max = Math.max(0, size.height - size.clientHeight);
     const ratio = max > 0 ? size.top / max : 0;
     state.scrollLock = 'visual';
@@ -313,6 +516,7 @@
       state.pendingVisualHtml = value;
     }
     state.lastEdited = 'source';
+    markMarkdownStale();
     refreshMeta();
     markDirty();
   }
@@ -355,12 +559,19 @@
       name.value = state.titleLocked ? state.docTitle : App.slugify(state.docTitle, 'sin-titulo');
       sizeFileNameInput(name);
     }
-    document.title = (state.docTitle || 'Documento') + ' · Editor HTML';
+    const ext = document.querySelector('.file-ext');
+    if (ext) ext.textContent = state.codeLang === 'md' ? '.md' : '.html';
+    document.title = (state.docTitle || 'Documento') + ' · Editor WYSIWYG';
+  }
+
+  function activeSourceEditor() {
+    return state.codeLang === 'md' && state.mdEditor ? state.mdEditor : state.cm;
   }
 
   function updateCursorPos() {
-    if (!state.cm) return;
-    const pos = state.cm.getCursor();
+    const editor = activeSourceEditor();
+    if (!editor) return;
+    const pos = editor.getCursor();
     const el = $('#cursorPos');
     if (el) el.textContent = 'Ln ' + (pos.line + 1) + ', Col ' + (pos.ch + 1);
   }
@@ -407,6 +618,8 @@
       titleLocked: state.titleLocked,
       encoding: state.encoding,
       compressed: state.compressed,
+      md: state.mdValue,
+      mdStale: state.mdStale,
       savedAt: Date.now(),
     };
 
@@ -451,6 +664,8 @@
         colors: state.colors,
         spellcheck: state.spellcheck,
         print: state.print,
+        codeLang: state.codeLang,
+        mdKeepHtml: state.mdKeepHtml,
       }));
     } catch (error) { /* sin persistencia */ }
   }
@@ -822,6 +1037,10 @@
   }
 
   function undoOperation() {
+    if (markdownActive() && state.mdEditor) {
+      state.mdEditor.undo();
+      return;
+    }
     if (!state.history.length) {
       App.toast('No hay operaciones que deshacer.', 'info', 2000);
       return;
@@ -834,6 +1053,10 @@
   }
 
   function redoOperation() {
+    if (markdownActive() && state.mdEditor) {
+      state.mdEditor.redo();
+      return;
+    }
     if (!state.future.length) {
       App.toast('No hay operaciones que rehacer.', 'info', 2000);
       return;
@@ -846,10 +1069,17 @@
   }
 
   function updateHistoryButtons() {
+    const md = markdownActive() && !!state.mdEditor;
     const undo = $('#undoBtn');
-    if (undo) undo.disabled = state.history.length === 0;
+    if (undo) {
+      undo.disabled = md ? false : state.history.length === 0;
+      undo.title = md ? 'Deshacer en el Markdown' : 'Deshacer última operación';
+    }
     const redo = $('#redoBtn');
-    if (redo) redo.disabled = state.future.length === 0;
+    if (redo) {
+      redo.disabled = md ? false : state.future.length === 0;
+      redo.title = md ? 'Rehacer en el Markdown' : 'Rehacer operación';
+    }
   }
 
   /* ---------- Operaciones sobre el documento ---------- */
@@ -928,12 +1158,18 @@
   }
 
   function copyCode() {
-    const html = getWorkingHtml();
-    if (!html.trim()) {
+    let text;
+    if (state.codeLang === 'md' && state.mdEditor) {
+      if (state.mdStale) refreshMarkdown(true);
+      text = state.mdEditor.getValue();
+    } else {
+      text = getWorkingHtml();
+    }
+    if (!text.trim()) {
       App.toast('No hay código que copiar.', 'warn');
       return;
     }
-    App.copyText(html).then(function (ok) {
+    App.copyText(text).then(function (ok) {
       if (ok) App.toast('Código copiado al portapapeles.', 'success');
       else App.toast('El navegador no ha permitido copiar. Selecciona el código y pulsa Ctrl+C.', 'error', 5000);
     });
@@ -2210,7 +2446,14 @@
     App.setBusy(true, kind === 'docx' ? 'Generando el documento de Word…' : 'Preparando la descarga…');
     try {
       await nextFrame();
-      if (kind === 'docx') {
+      if (kind === 'md') {
+        if (!App.Markdown || !App.Markdown.available) throw new Error('La conversión a Markdown no está disponible.');
+        const markdown = App.Markdown.toMarkdown(html, { keepHtml: state.mdKeepHtml });
+        if (!markdown.trim()) throw new Error('No se ha podido generar el Markdown de este documento.');
+        const filename = App.safeFileName(state.docTitle, 'documento') + '.md';
+        App.downloadBlob(new Blob([markdown + '\n'], { type: 'text/markdown;charset=utf-8' }), filename);
+        App.toast('Markdown descargado: ' + filename, 'success', 5000);
+      } else if (kind === 'docx') {
         const result = await App.Files.downloadDocx(html, state.docTitle);
         App.toast('Documento de Word descargado: ' + result.filename, 'success', 5000);
       } else {
@@ -2409,7 +2652,7 @@
       state.baseTitle = input.value.trim() || 'sin-titulo';
       state.titleLocked = true;
       state.docTitle = state.baseTitle;
-      document.title = state.docTitle + ' · Editor HTML';
+      document.title = state.docTitle + ' · Editor WYSIWYG';
       markDirty();
       scheduleAutoSave();
     });
@@ -2847,6 +3090,7 @@
     if (state.cm.getValue() === value) return;
     if (state.compressed) state.compressed = false;
     setSource(value, { fromVisual: true });
+    markMarkdownStale();
   }
 
   /**
@@ -2889,6 +3133,8 @@
     state.split = clamp(Number(state.settings.split) || 50, 20, 80);
     state.autoScroll = state.settings.autoScroll !== false;
     state.spellcheck = state.settings.spellcheck !== false;
+    state.codeLang = state.settings.codeLang === 'md' ? 'md' : 'html';
+    state.mdKeepHtml = state.settings.mdKeepHtml !== false;
     if (state.settings.print && typeof state.settings.print === 'object') {
       const savedPrint = state.settings.print;
       if (PRINT_SIZES[savedPrint.size]) state.print.size = savedPrint.size;
@@ -2904,6 +3150,9 @@
     const draft = loadDraft();
     state.compressed = draft ? !!draft.compressed : false;
     state.initialHtml = draft ? (state.compressed ? draft.html : formatHtml(draft.html)) : '';
+    const draftMd = draft && typeof draft.md === 'string' ? draft.md : null;
+    state.initialMd = draftMd;
+    state.mdStale = !(draftMd != null && draft && draft.mdStale === false);
     if (draft) {
       state.baseTitle = draft.baseTitle || draft.title || 'sin-titulo';
       state.titleLocked = !!draft.titleLocked;
@@ -2914,6 +3163,10 @@
 
     applySplit(state.split);
     setupCodeMirror(state.initialHtml);
+    const initialMd = state.initialMd != null
+      ? state.initialMd
+      : (App.Markdown && App.Markdown.available ? App.Markdown.toMarkdown(state.initialHtml, { keepHtml: state.mdKeepHtml }) : '');
+    setupMarkdownEditor(initialMd);
     setupWysiwyg();
     buildCleanGrid();
     setupFindReplace();
@@ -2926,6 +3179,7 @@
     bindDialogs();
     bindColors();
     bindGlyphPalettes();
+    bindMarkdownSwitch();
     bindFileName();
     bindPrintDialog();
     bindDateDialog();
@@ -2940,6 +3194,9 @@
     setSpellcheck(state.spellcheck, true);
     setAutoScroll(state.autoScroll, true);
     setView(state.view, true);
+    setCodeLang(state.codeLang, true);
+    setMdKeep(state.mdKeepHtml, true);
+    updateCharPill();
     setDockOpen(false);
     setDockTab('clean');
     updateHistoryButtons();
