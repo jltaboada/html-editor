@@ -37,6 +37,7 @@
     docTitle: 'sin-titulo',
     titleLocked: false,
     encoding: false,
+    compressed: false,
     autoScroll: true,
     view: 'split',
     split: 50,
@@ -59,6 +60,15 @@
 
   function nextFrame() {
     return new Promise((resolve) => setTimeout(resolve, 30));
+  }
+
+  function normalizeHex(value) {
+    let raw = String(value == null ? '' : value).trim().replace(/^#/, '');
+    if (/^[0-9a-f]{3}$/i.test(raw)) {
+      raw = raw.split('').map(function (char) { return char + char; }).join('');
+    }
+    if (!/^[0-9a-f]{6}$/i.test(raw)) return null;
+    return '#' + raw.toLowerCase();
   }
 
   function hasFiles(event) {
@@ -131,6 +141,7 @@
 
     state.cm.on('change', function () {
       if (state.suppressSource) return;
+      state.compressed = false;
       syncVisualDebounced.cancel();
       state.lastEdited = 'source';
       markDirty();
@@ -141,6 +152,13 @@
     state.cm.on('cursorActivity', updateCursorPos);
     state.cm.on('scroll', onSourceScroll);
     state.cm.on('focus', function () { state.lastEdited = 'source'; });
+    state.cm.on('paste', function () {
+      setTimeout(autoFormatSource, 60);
+    });
+    state.cm.on('blur', function () {
+      autoFormatDebounced.cancel();
+      autoFormatSource();
+    });
   }
 
   function setSource(html, options) {
@@ -163,12 +181,33 @@
     updateCursorPos();
   }
 
+  const FORMAT_MAX_CHARS = 400000;
+
+  function formatHtml(html) {
+    const value = String(html == null ? '' : html);
+    if (!value.trim() || value.length > FORMAT_MAX_CHARS) return value;
+    const pretty = App.prettyHtml(value);
+    return pretty || value;
+  }
+
+  function autoFormatSource() {
+    if (!state.cm || state.compressed) return false;
+    const current = state.cm.getValue();
+    if (!current.trim() || current.length > FORMAT_MAX_CHARS) return false;
+    const pretty = App.prettyHtml(current);
+    if (!pretty || pretty === current) return false;
+    setSource(pretty, { fromVisual: state.lastEdited === 'visual' });
+    return true;
+  }
+
   function flushVisualToSource() {
     syncVisualDebounced.cancel();
+    autoFormatDebounced.cancel();
     if (!state.wysiwyg || !state.wysiwyg.isReady) return;
     if (!state.cm) return;
-    if (state.cm.getValue() === state.wysiwyg.getHtml()) return;
-    setSource(state.wysiwyg.getHtml(), { fromVisual: true });
+    const value = formatHtml(state.wysiwyg.getHtml());
+    if (state.cm.getValue() === value) return;
+    setSource(value, { fromVisual: true });
   }
 
   function flushSourceToVisual() {
@@ -210,6 +249,7 @@
     }
     markDirty();
     syncVisualDebounced(html);
+    autoFormatDebounced();
     scheduleMeta();
   }
 
@@ -258,7 +298,8 @@
 
   function applyRaw(html, options) {
     const opts = options || {};
-    const value = String(html == null ? '' : html);
+    let value = String(html == null ? '' : html);
+    if (opts.format !== false) value = formatHtml(value);
     setSource(value, { preserveScroll: !opts.resetScroll, preserveCursor: !opts.resetScroll });
     if (state.wysiwyg && state.wysiwyg.isReady) {
       state.wysiwyg.setHtml(value);
@@ -283,8 +324,6 @@
     const html = getWorkingHtml();
     const stats = App.stats(html);
     const words = stats.words;
-    const visualCount = $('#visualCount');
-    if (visualCount) visualCount.textContent = words.toLocaleString('es-ES') + (words === 1 ? ' palabra' : ' palabras');
     const statsEl = $('#stats');
     if (statsEl) statsEl.textContent = stats.chars.toLocaleString('es-ES') + ' caracteres · ' + words.toLocaleString('es-ES') + ' palabras';
     const charCount = $('#charCount');
@@ -352,6 +391,7 @@
       baseTitle: state.baseTitle,
       titleLocked: state.titleLocked,
       encoding: state.encoding,
+      compressed: state.compressed,
       savedAt: Date.now(),
     };
 
@@ -716,8 +756,16 @@
     if (textBar) textBar.style.background = state.colors.text || '#222222';
     const highlightBar = $('#highlightBar');
     if (highlightBar) highlightBar.style.background = state.colors.highlight || '#fff3cd';
+    const current = normalizeHex(state.colors[state.colorTarget]) || (state.colorTarget === 'text' ? '#222222' : '#fff3cd');
     const custom = $('#colorCustom');
-    if (custom) custom.value = state.colors[state.colorTarget] || (state.colorTarget === 'text' ? '#222222' : '#fff3cd');
+    if (custom) custom.value = current;
+    const hex = $('#colorHex');
+    if (hex && document.activeElement !== hex) hex.value = current.replace('#', '').toUpperCase();
+    const hexWrap = hex ? hex.closest('.color-hex') : null;
+    if (hexWrap) hexWrap.classList.remove('is-invalid');
+    $$('.color-swatch[data-color]').forEach(function (swatch) {
+      swatch.classList.toggle('is-selected', swatch.dataset.color.toLowerCase() === current.toLowerCase());
+    });
   }
 
   function updateEncodingBtn() {
@@ -856,7 +904,8 @@
       return;
     }
     pushHistory('Comprimir HTML');
-    applyRaw(after);
+    state.compressed = true;
+    applyRaw(after, { format: false });
     App.toast('HTML comprimido.', 'success');
   }
 
@@ -886,7 +935,7 @@
     }
     pushHistory(nextOn ? 'Codificar entidades' : 'Decodificar entidades');
     state.encoding = nextOn;
-    applyRaw(after);
+    applyRaw(after, { format: false });
     updateEncodingBtn();
     App.toast(nextOn ? 'Caracteres convertidos a entidades HTML.' : 'Entidades HTML decodificadas.', 'success');
   }
@@ -907,6 +956,7 @@
     state.baseTitle = 'sin-titulo';
     state.titleLocked = false;
     state.encoding = false;
+    state.compressed = false;
     applyRaw('', { resetScroll: true });
     updateEncodingBtn();
     App.toast('Página nueva en blanco.', 'success');
@@ -1025,9 +1075,6 @@
       button.title = color;
       button.setAttribute('aria-label', 'Usar el color ' + color);
       button.style.background = color;
-      if (color.toLowerCase() === '#ffffff') {
-        button.style.boxShadow = 'inset 0 0 0 1px rgba(0, 0, 0, .18)';
-      }
       grid.appendChild(button);
     });
   }
@@ -1064,6 +1111,23 @@
       const btn = $(selector);
       if (btn) btn.setAttribute('aria-expanded', 'false');
     });
+  }
+
+  function applyHexColor() {
+    const input = $('#colorHex');
+    if (!input) return;
+    const wrap = input.closest('.color-hex');
+    const hex = normalizeHex(input.value);
+    if (!hex) {
+      if (wrap) wrap.classList.add('is-invalid');
+      App.toast('Código hexadecimal no válido. Prueba con 02874d o 0a0.', 'warn', 3400);
+      input.focus({ preventScroll: true });
+      input.select();
+      return;
+    }
+    if (wrap) wrap.classList.remove('is-invalid');
+    input.value = hex.replace('#', '').toUpperCase();
+    applyColorChoice(hex);
   }
 
   function applyColorChoice(color) {
@@ -1464,6 +1528,26 @@
       custom.addEventListener('change', function () { applyColorChoice(custom.value); });
     }
 
+    const hex = $('#colorHex');
+    if (hex) {
+      hex.addEventListener('focus', function () { hex.select(); });
+      hex.addEventListener('input', function () {
+        const clean = hex.value.replace(/[^0-9a-f]/gi, '').replace(/^#/, '').slice(0, 7);
+        if (clean !== hex.value) hex.value = clean;
+        const wrap = hex.closest('.color-hex');
+        if (wrap) wrap.classList.remove('is-invalid');
+      });
+      hex.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          applyHexColor();
+        }
+      });
+    }
+
+    const hexApply = $('#colorHexApply');
+    if (hexApply) hexApply.addEventListener('click', applyHexColor);
+
     const clear = $('#colorClear');
     if (clear) clear.addEventListener('click', function () { applyColorChoice('clear'); });
   }
@@ -1745,6 +1829,10 @@
       if (state.dirty) saveDraft(false, true);
     });
 
+    window.addEventListener('pagehide', function () {
+      if (state.dirty) saveDraft(false, true);
+    });
+
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden' && state.dirty) saveDraft(false, true);
     });
@@ -1786,13 +1874,15 @@
     setSource(html, { fromVisual: true });
   }, 320);
 
+  const autoFormatDebounced = App.debounce(autoFormatSource, 1200);
+
   const syncSourceDebounced = App.debounce(function () {
     if (!state.wysiwyg || !state.wysiwyg.isReady) return;
     state.wysiwyg.setHtml(state.cm ? state.cm.getValue() : '');
   }, 260);
 
   const scheduleMeta = App.debounce(refreshMeta, 260);
-  const scheduleAutoSave = App.debounce(function () { saveDraft(false, false); }, 900);
+  const scheduleAutoSave = App.debounce(function () { saveDraft(false, false); }, 650);
   const saveSettingsDebounced = App.debounce(persistSettings, 400);
 
   function init() {
@@ -1809,7 +1899,8 @@
     }
 
     const draft = loadDraft();
-    state.initialHtml = draft ? draft.html : '';
+    state.compressed = draft ? !!draft.compressed : false;
+    state.initialHtml = draft ? (state.compressed ? draft.html : formatHtml(draft.html)) : '';
     if (draft) {
       state.baseTitle = draft.baseTitle || draft.title || 'sin-titulo';
       state.titleLocked = !!draft.titleLocked;

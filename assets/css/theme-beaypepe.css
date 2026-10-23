@@ -289,12 +289,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
   box-shadow: 0 0 0 3px var(--accent-soft-2), 0 1px 2px rgba(20, 36, 28, .05);
 }
 .visual-frame { background: #fff; }
-.pane-foot {
-  height: 28px;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-}
 
 /* ---------- Editor de código ---------- */
 .cm-wrap .CodeMirror {
@@ -394,7 +388,9 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 .busy-card { border-radius: 6px; }
 .color-pop { border-radius: 6px; }
-.swatch { border-radius: 3px; }
+.color-swatch { border-radius: 3px; }
+.color-hex,
+.color-apply,
 .color-custom input[type="color"] { border-radius: 4px; }
 .image-preview { border-radius: 5px; }
 
@@ -436,7 +432,6 @@ body.focus-mode .visual-scroll { background: #fff; }
 }
 
 @media (max-width: 700px) {
-  .pane-foot-hint { display: none; }
   .statusbar { padding: 5px 9px; }
 }
 

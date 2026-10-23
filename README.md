@@ -36,7 +36,7 @@ python -m http.server 8080
   tipografía, tamaño, negrita, cursiva, subrayado, tachado, superíndice/subíndice, color de texto y
   de resaltado, alineación, listas, sangría, enlaces, imágenes, tablas, líneas horizontales y
   limpiar formato. Los desplegables de formato, tipografía y tamaño muestran una vista previa real
-  de cada opción.
+  de cada opción, y el color se puede elegir en la paleta o escribiendo un código hexadecimal.
 - **Limpieza** con 11 reglas (estilos inline, clases e IDs, etiquetas vacías, etiquetas con un
   espacio, espacios repetidos, comentarios, atributos, a texto plano, Smart `&nbsp;`, caracteres
   «IA» y scripts/estilos). El botón **Limpieza** aplica todas las reglas marcadas; cada regla
@@ -47,9 +47,15 @@ python -m http.server 8080
   Los DOCX se convierten con Mammoth y sus imágenes se incrustan como `data:` URIs.
 - **Exportar**: HTML listo para publicar, ZIP con carpeta `images/` cuando el documento lleva
   imágenes incrustadas, o DOCX para Word.
-- **Extras**: borrador local automático, codificar/decodificar entidades HTML, indentar, comprimir,
-  copiar el código, desplazamiento sincronizado de los paneles, contador de caracteres/palabras,
-  modo enfoque y Lorem ipsum.
+- **Código siempre ordenado**: el HTML se indenta y ordena solo mientras escribes en el panel
+  visual y al pegar en el panel de código, sin pulsar *Indentar*. El botón sigue disponible y
+  *Comprimir* se respeta hasta que vuelvas a editar.
+- **Memoria de trabajo**: el borrador se guarda solo (también al cerrar o recargar el navegador) y,
+  al volver, se restauran el texto, la vista, la división de paneles, el desplazamiento sincronizado,
+  los colores y las reglas de limpieza marcadas.
+- **Extras**: codificar/decodificar entidades HTML, indentar, comprimir, copiar el código,
+  desplazamiento sincronizado de los paneles, contador de caracteres/palabras, modo enfoque y
+  Lorem ipsum.
 - **Privacidad**: nada se envía a ningún servidor. El borrador y las preferencias viven en
   `localStorage`.
 

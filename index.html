@@ -230,11 +230,6 @@
             <iframe id="visualFrame" class="visual-frame" title="Documento editable" sandbox="allow-same-origin allow-popups allow-forms allow-modals"></iframe>
           </div>
         </div>
-
-        <div class="pane-foot">
-          <span class="pane-foot-hint"><kbd>Ctrl</kbd> + <kbd>S</kbd> guarda un borrador local</span>
-          <span id="visualCount">0 palabras</span>
-        </div>
       </section>
 
       <div class="splitter" id="splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Redimensionar paneles" aria-valuemin="20" aria-valuemax="80" aria-valuenow="50"></div>
@@ -351,7 +346,19 @@
     </div>
     <div class="color-grid" id="colorGrid"></div>
     <div class="color-pop-foot">
-      <label class="color-custom">Personalizado <input type="color" id="colorCustom" value="#222222"></label>
+      <span class="color-pop-label" id="colorHexLabel">Color personalizado</span>
+      <div class="color-custom-row">
+        <label class="color-hex" for="colorHex">
+          <span class="color-hex-symbol" aria-hidden="true">#</span>
+          <input type="text" id="colorHex" maxlength="7" placeholder="222222" spellcheck="false" autocomplete="off" autocapitalize="off" aria-labelledby="colorHexLabel">
+        </label>
+        <button type="button" class="color-apply" id="colorHexApply" title="Aplicar el color hexadecimal" aria-label="Aplicar el color hexadecimal">
+          <svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+        </button>
+        <label class="color-custom" title="Elegir color con el selector">
+          <input type="color" id="colorCustom" value="#222222" aria-label="Elegir color con el selector">
+        </label>
+      </div>
       <button type="button" class="linkbtn" id="colorClear">Quitar color</button>
     </div>
   </div>

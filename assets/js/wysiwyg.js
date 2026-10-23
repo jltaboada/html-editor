@@ -36,7 +36,7 @@
       overflow-wrap: break-word;
       -webkit-font-smoothing: antialiased;
     }
-    body:empty::before {
+    body.is-empty::before {
       content: attr(data-placeholder);
       color: #9aa3a0;
       pointer-events: none;
@@ -135,6 +135,7 @@
       state.emitSelection = emitSelection;
 
       const emitInput = () => {
+        state.body.classList.toggle('is-empty', isEmptyDocument());
         if (opts.onInput) opts.onInput(api.getHtml());
       };
       const emitScroll = App.throttle(() => {
@@ -388,6 +389,10 @@
         if (isInsideBody(range.commonAncestorContainer)) restoreRange = range.cloneRange();
       }
       state.body.innerHTML = value;
+      if (!value || !state.body.textContent.trim() && !state.body.querySelector('img,table,hr,ul,ol,blockquote')) {
+        state.body.innerHTML = '<p><br></p>';
+      }
+      state.body.classList.toggle('is-empty', isEmptyDocument());
       if (restoreRange && isInsideBody(restoreRange.commonAncestorContainer)) {
         try {
           sel.removeAllRanges();
@@ -399,6 +404,12 @@
         win.scrollTo(0, scrollY);
         try { state.doc.execCommand('styleWithCSS', false, false); } catch (error) { /* ignorar */ }
       }
+    }
+
+    function isEmptyDocument() {
+      if (!state.ready) return true;
+      if (state.body.querySelector('img,table,hr,ul,ol,blockquote,pre,figure,iframe')) return false;
+      return !state.body.textContent.replace(/\u00a0/g, ' ').trim();
     }
 
     function setScrollRatio(ratio) {
