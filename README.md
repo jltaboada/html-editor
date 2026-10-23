@@ -221,6 +221,8 @@ index.html                 Estructura de la app y orden de carga de scripts
 assets/css/app.css         Base de la interfaz
 assets/css/theme-jltaboada.css  Paleta clara/oscura, tipografía y acabados
 assets/fonts/              Varela Round (woff2) y licencia SIL OFL
+assets/img/                Icono, favicon y guía de proporciones (assets/img/README.md)
+site.webmanifest           Iconos de la app para la pantalla de inicio
 assets/js/utils.js         Utilidades (DOM, avisos, descargas, confirmaciones…)
 assets/js/math.js          Ecuaciones LaTeX → MathML (KaTeX)
 assets/js/emojis.js        Datos de emoticonos y caracteres especiales (nombres en español)

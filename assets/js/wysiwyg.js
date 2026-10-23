@@ -37,11 +37,6 @@
       overflow-wrap: break-word;
       -webkit-font-smoothing: antialiased;
     }
-    body.is-empty::before {
-      content: attr(data-placeholder);
-      color: #9a9a9a;
-      pointer-events: none;
-    }
     h1, h2, h3, h4, h5, h6 { margin: 1.1em 0 .5em; line-height: 1.2; letter-spacing: -.015em; font-weight: 700; }
     h1:first-child, h2:first-child, h3:first-child, p:first-child { margin-top: 0; }
     h1 { font-size: 2.15em; }
@@ -129,7 +124,6 @@
     .video-frame iframe, .video-embed--file video { pointer-events: none; }
     /* Modo oscuro del documento */
     html[data-theme="dark"] body { background: #141414; color: #ededed; }
-    html[data-theme="dark"] body.is-empty::before { color: #7d7d7d; }
     html[data-theme="dark"] h6 { color: #b0b0b0; }
     html[data-theme="dark"] a { color: #df8c7d; }
     html[data-theme="dark"] a:hover { color: #eeb0a4; }
@@ -186,7 +180,7 @@
       '<meta name="viewport" content="width=device-width, initial-scale=1">',
       '<style>' + DOCUMENT_CSS + '</style>',
       '</head>',
-      '<body contenteditable="true" spellcheck="true" data-placeholder="Empieza a escribir aquí…"></body>',
+      '<body contenteditable="true" spellcheck="true"></body>',
       '</html>',
     ].join('');
 
@@ -228,9 +222,7 @@
       state.body.addEventListener('compositionstart', function () { state.composing = true; });
       state.body.addEventListener('compositionend', function () {
         state.composing = false;
-        if (wrapLooseBlocks()) {
-          state.body.classList.toggle('is-empty', isEmptyDocument());
-        }
+        wrapLooseBlocks();
       });
 
       const emitSelection = App.throttle(() => {
@@ -239,7 +231,6 @@
       state.emitSelection = emitSelection;
 
       const emitInput = () => {
-        state.body.classList.toggle('is-empty', isEmptyDocument());
         if (opts.onInput) opts.onInput(api.getHtml());
       };
       const emitScroll = App.throttle(() => {
@@ -606,7 +597,6 @@
     }
 
     function emitTaskChange() {
-      state.body.classList.toggle('is-empty', isEmptyDocument());
       if (opts.onInput) opts.onInput(api.getHtml());
       if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
     }
@@ -668,7 +658,6 @@
         wrapLooseBlocks();
       }
       prepareTaskInputs();
-      state.body.classList.toggle('is-empty', isEmptyDocument());
       if (restoreRange && isInsideBody(restoreRange.commonAncestorContainer)) {
         try {
           sel.removeAllRanges();
@@ -680,12 +669,6 @@
         win.scrollTo(0, scrollY);
         try { state.doc.execCommand('styleWithCSS', false, false); } catch (error) { /* ignorar */ }
       }
-    }
-
-    function isEmptyDocument() {
-      if (!state.ready) return true;
-      if (state.body.querySelector('img,table,hr,ul,ol,blockquote,pre,figure,iframe')) return false;
-      return !state.body.textContent.replace(/\u00a0/g, ' ').trim();
     }
 
     function setScrollRatio(ratio) {
@@ -761,7 +744,6 @@
       while (holder.firstChild) fragment.appendChild(holder.firstChild);
       node.parentNode.replaceChild(fragment, node);
       state.savedRange = null;
-      state.body.classList.toggle('is-empty', isEmptyDocument());
       if (opts.onInput) opts.onInput(api.getHtml());
       if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
       return true;
@@ -1025,7 +1007,6 @@
       }
 
       if (target) focusCell(target);
-      state.body.classList.toggle('is-empty', isEmptyDocument());
       if (opts.onInput) opts.onInput(api.getHtml());
       if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
       return action;
@@ -1041,7 +1022,6 @@
     /** Avisa de un cambio hecho desde fuera para sincronizar y guardar. */
     function commit() {
       if (!state.ready) return;
-      state.body.classList.toggle('is-empty', isEmptyDocument());
       if (opts.onInput) opts.onInput(api.getHtml());
       if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
     }

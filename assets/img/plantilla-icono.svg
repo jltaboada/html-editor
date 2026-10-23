@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Plantilla de icono 512 × 512</title>
+  <desc>Guía de medidas: forma de 120 px de radio, zona segura del 80 % y área de recorte circular para iconos maskable.</desc>
+  <defs>
+    <style>
+      .safe { fill: none; stroke: #7fe3ff; stroke-width: 2.5; stroke-dasharray: 8 7; }
+      .clip { fill: none; stroke: #ffc46b; stroke-width: 2.5; stroke-dasharray: 8 7; }
+      .center { stroke: #7fe3ff; stroke-width: 2; stroke-dasharray: 3 7; opacity: .8; }
+      .label { font: 600 15px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #ffffff; }
+      .hint { font: 500 13px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #ffffff; opacity: .85; }
+      .silueta { fill: none; stroke: #ffffff; stroke-width: 26; opacity: .22; }
+    </style>
+  </defs>
+
+  <!-- Forma del icono: cuadrado de 512 con esquinas de 120 -->
+  <rect width="512" height="512" rx="120" fill="#9c3b2d"/>
+
+  <!-- Zona segura: 10 % de margen por lado (el dibujo va dentro) -->
+  <rect class="safe" x="51" y="51" width="410" height="410" rx="96"/>
+  <!-- Recorte circular de Android para iconos maskable -->
+  <circle class="clip" cx="256" cy="256" r="205"/>
+
+  <!-- Ejes centrales -->
+  <path class="center" d="M256 30v452M30 256h452"/>
+
+  <!-- Silueta del dibujo actual, como referencia de tamaño -->
+  <g class="silueta" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="106" y="108" width="300" height="212" rx="30"/>
+    <path d="M256 320v46M212 384h88"/>
+  </g>
+
+  <text class="label" x="256" y="40" text-anchor="middle">Zona segura: 80 % central</text>
+  <text class="label" x="256" y="476" text-anchor="middle">Círculo naranja: recorte maskable</text>
+  <text class="hint" x="256" y="496" text-anchor="middle">Lienzo 512 · esquina 120 · trazo 26 · margen 51</text>
+</svg>

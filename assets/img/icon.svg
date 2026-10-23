@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="t">
+  <title id="t">Editor WYSIWYG</title>
+  <rect width="512" height="512" rx="120" fill="#9c3b2d"/>
+  <g transform="translate(0 18)" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="106" y="90" width="300" height="212" rx="30" stroke-width="26"/>
+    <path d="M256 302v46M212 366h88" stroke-width="26"/>
+    <path d="M192 156 150 198l42 42M320 156l42 42-42 42M250 238 260 158" stroke-width="26"/>
+  </g>
+</svg>
