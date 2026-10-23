@@ -74,6 +74,15 @@
     .math--block math { margin: 0 auto; }
     .math[contenteditable="false"] { cursor: default; }
     .math:hover { outline: 1px dashed rgba(156, 59, 45, .45); outline-offset: 2px; }
+    /* Listas de tareas y notas al pie */
+    ul:has(> li > input[type="checkbox"]), ol:has(> li > input[type="checkbox"]) { list-style: none; padding-left: .1em; }
+    li > input[type="checkbox"] { width: 1.05em; height: 1.05em; margin: 0 .5em 0 0; vertical-align: -.12em; accent-color: #9c3b2d; cursor: pointer; }
+    .footnotes { margin-top: 2.2em; border-top: 1px solid #e0e0e0; padding-top: .9em; font-size: .86em; color: #555; }
+    .footnotes ol { padding-left: 1.6em; }
+    .footnotes li { margin: .35em 0; }
+    .footnote-ref { font-size: .74em; line-height: 0; }
+    .footnote-ref a { text-decoration: none; font-weight: 700; }
+    .footnote-backref { text-decoration: none; margin-left: .25em; }
     mark { background: #f4e0da; padding: 0 2px; }
     small { font-size: .85em; }
     sup, sub { line-height: 0; }
@@ -134,6 +143,8 @@
     html[data-theme="dark"] hr { border-top-color: #333333; }
     html[data-theme="dark"] mark { background: #4a231c; color: #ffffff; }
     html[data-theme="dark"] .math:hover { outline-color: rgba(223, 140, 125, .6); }
+    html[data-theme="dark"] .footnotes { border-top-color: #333333; color: #b9b9b9; }
+    html[data-theme="dark"] li > input[type="checkbox"] { accent-color: #df8c7d; }
     html[data-theme="dark"] ::selection { background: rgba(208, 105, 90, .3); }
     @media (max-width: 640px) {
       body { padding: 28px 22px 80px; }
@@ -154,7 +165,10 @@
       savedRange: null,
       emitSelection: null,
       theme: 'light',
+      lang: 'es',
+      page: null,
       composing: false,
+      activeImage: null,
     };
 
     const readyPromise = new Promise((resolve) => {
@@ -195,6 +209,22 @@
       state.body.setAttribute('contenteditable', 'true');
       state.body.setAttribute('spellcheck', 'true');
       state.doc.documentElement.setAttribute('data-theme', state.theme);
+      state.body.addEventListener('change', function (event) {
+        const box = event.target;
+        if (!box || box.tagName !== 'INPUT' || String(box.type).toLowerCase() !== 'checkbox') return;
+        emitTaskChange(box);
+      });
+      state.body.addEventListener('click', function (event) {
+        const target = event.target;
+        if (!target || target.nodeType !== 1) return;
+        if (target.tagName === 'INPUT' && String(target.type).toLowerCase() === 'checkbox') {
+          /* El navegador ya ha cambiado la casilla antes de este evento: no se
+             toca su estado; el evento `change` guarda el resultado. */
+          state.activeImage = null;
+          return;
+        }
+        state.activeImage = target.tagName === 'IMG' ? target : null;
+      });
       state.body.addEventListener('compositionstart', function () { state.composing = true; });
       state.body.addEventListener('compositionend', function () {
         state.composing = false;
@@ -548,10 +578,48 @@
       return changed;
     }
 
+    /**
+     * Las casillas de las listas de tareas se guardan desactivadas en el HTML
+     * (como las genera Markdown), pero dentro del editor deben poder pulsarse.
+     */
+    function prepareTaskInputs() {
+      if (!state.ready) return;
+      state.body.querySelectorAll('input[type="checkbox"]').forEach(function (box) {
+        if (box.hasAttribute('disabled')) {
+          box.setAttribute('data-task-disabled', '1');
+          box.removeAttribute('disabled');
+        }
+        box.removeAttribute('contenteditable');
+      });
+    }
+
+    function syncTaskInputs(root) {
+      root.querySelectorAll('input[type="checkbox"]').forEach(function (box) {
+        if (box.checked) box.setAttribute('checked', 'checked');
+        else box.removeAttribute('checked');
+        if (box.getAttribute('data-task-disabled') === '1') {
+          box.setAttribute('disabled', 'disabled');
+          box.removeAttribute('data-task-disabled');
+        }
+        box.removeAttribute('data-task');
+      });
+    }
+
+    function emitTaskChange() {
+      state.body.classList.toggle('is-empty', isEmptyDocument());
+      if (opts.onInput) opts.onInput(api.getHtml());
+      if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
+    }
+
     function getHtml() {
       if (!state.ready) return '';
       wrapLooseBlocks();
-      const html = state.body.innerHTML || '';
+      let root = state.body;
+      if (state.body.querySelector('input[type="checkbox"]')) {
+        root = state.body.cloneNode(true);
+        syncTaskInputs(root);
+      }
+      const html = root.innerHTML || '';
       if (!html || html === '<br>' || html === '<p><br></p>') return '';
       return html;
     }
@@ -593,11 +661,13 @@
         if (isInsideBody(range.commonAncestorContainer)) restoreRange = range.cloneRange();
       }
       state.body.innerHTML = value;
+      state.activeImage = null;
       if (!value || !state.body.textContent.trim() && !state.body.querySelector('img,table,hr,ul,ol,blockquote')) {
         state.body.innerHTML = '<p><br></p>';
       } else {
         wrapLooseBlocks();
       }
+      prepareTaskInputs();
       state.body.classList.toggle('is-empty', isEmptyDocument());
       if (restoreRange && isInsideBody(restoreRange.commonAncestorContainer)) {
         try {
@@ -649,6 +719,7 @@
         }
       }
       state.savedRange = null;
+      prepareTaskInputs();
       saveSelection();
       if (opts.onInput) opts.onInput(api.getHtml());
       if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
@@ -675,6 +746,7 @@
         sel.addRange(after);
         state.savedRange = after.cloneRange();
       }
+      prepareTaskInputs();
       if (opts.onInput) opts.onInput(api.getHtml());
       if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
       return true;
@@ -841,6 +913,139 @@
       try { state.body.spellcheck = on !== false; } catch (error) { /* ignorar */ }
     }
 
+    /** Idioma de la corrección ortográfica: «auto» deja decidir al navegador. */
+    function setLanguage(lang) {
+      state.lang = lang || 'es';
+      if (!state.ready) return;
+      const value = state.lang === 'auto' ? '' : state.lang;
+      if (value) {
+        state.doc.documentElement.setAttribute('lang', value);
+        state.body.setAttribute('lang', value);
+      } else {
+        state.doc.documentElement.removeAttribute('lang');
+        state.body.removeAttribute('lang');
+      }
+    }
+
+    function setPage(page) {
+      state.page = page || null;
+      if (!state.ready) return;
+      if (App.Page) App.Page.bodyStyle(state.page || App.Page.DEFAULT, state.body);
+    }
+
+    function elementFromNode(node) {
+      if (!node) return null;
+      return node.nodeType === 1 ? node : node.parentElement;
+    }
+
+    /** Elemento img o celda de tabla donde está el cursor o el último clic. */
+    function getContext() {
+      if (!state.ready) return { image: null, table: null, cell: null, row: null };
+      let range = state.savedRange;
+      const sel = state.doc.getSelection();
+      if (sel && sel.rangeCount && isInsideBody(sel.anchorNode)) range = sel.getRangeAt(0);
+      const node = range ? elementFromNode(range.startContainer) : null;
+      const cell = node && node.closest ? node.closest('td,th') : null;
+      const table = cell ? cell.closest('table') : (node && node.closest ? node.closest('table') : null);
+      let image = state.activeImage && state.activeImage.isConnected ? state.activeImage : null;
+      if (!image && node && node.closest) image = node.closest('img');
+      if (image && !state.body.contains(image)) image = null;
+      return { image: image, table: table, cell: cell, row: cell ? cell.parentElement : null };
+    }
+
+    function focusCell(cell) {
+      if (!cell) return;
+      try {
+        state.win.focus();
+        const range = state.doc.createRange();
+        range.selectNodeContents(cell);
+        range.collapse(true);
+        const sel = state.doc.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        state.savedRange = range.cloneRange();
+        if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
+      } catch (error) { /* sin selección */ }
+    }
+
+    /**
+     * Añade o quita filas y columnas de la tabla donde está el cursor.
+     * Devuelve el nombre de la acción o un motivo de error ('last-row'…).
+     */
+    function tableAction(action) {
+      if (!state.ready) return false;
+      const context = getContext();
+      const cell = context.cell;
+      const table = context.table;
+      if (!cell || !table || !cell.parentElement) return false;
+      const row = cell.parentElement;
+      const rows = Array.prototype.slice.call(table.rows || []);
+      const cellIndex = Array.prototype.indexOf.call(row.children, cell);
+      let target = null;
+
+      if (action === 'row-above' || action === 'row-below') {
+        const newRow = state.doc.createElement('tr');
+        Array.prototype.forEach.call(row.children, function (source) {
+          const created = state.doc.createElement(source.tagName === 'TH' ? 'th' : 'td');
+          created.innerHTML = '<br>';
+          newRow.appendChild(created);
+        });
+        if (action === 'row-above') row.parentNode.insertBefore(newRow, row);
+        else row.parentNode.insertBefore(newRow, row.nextSibling);
+        target = newRow.children[Math.min(cellIndex, newRow.children.length - 1)];
+      } else if (action === 'col-left' || action === 'col-right') {
+        rows.forEach(function (currentRow) {
+          const cells = Array.prototype.slice.call(currentRow.children);
+          if (!cells.length) return;
+          const reference = cells[Math.min(cellIndex, cells.length - 1)];
+          const created = state.doc.createElement(reference.tagName === 'TH' ? 'th' : 'td');
+          created.innerHTML = '<br>';
+          if (action === 'col-left') currentRow.insertBefore(created, reference);
+          else currentRow.insertBefore(created, reference.nextSibling);
+          if (currentRow === row) target = created;
+        });
+      } else if (action === 'row-remove') {
+        if (rows.length <= 1) return 'last-row';
+        const nextRow = row.nextElementSibling || row.previousElementSibling;
+        row.remove();
+        target = nextRow ? nextRow.children[Math.min(cellIndex, nextRow.children.length - 1)] : null;
+      } else if (action === 'col-remove') {
+        const most = rows.reduce(function (max, currentRow) {
+          return Math.max(max, currentRow.children.length);
+        }, 0);
+        if (most <= 1) return 'last-col';
+        rows.forEach(function (currentRow) {
+          if (currentRow.children.length <= 1) return;
+          const remove = currentRow.children[cellIndex] || currentRow.children[currentRow.children.length - 1];
+          if (remove) remove.remove();
+        });
+        target = row.children[Math.min(cellIndex, row.children.length - 1)] || null;
+      } else {
+        return false;
+      }
+
+      if (target) focusCell(target);
+      state.body.classList.toggle('is-empty', isEmptyDocument());
+      if (opts.onInput) opts.onInput(api.getHtml());
+      if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
+      return action;
+    }
+
+    function setImageWidth(image, width) {
+      if (!image || !image.style) return;
+      const value = Math.max(16, Math.min(4000, Math.round(Number(width) || 0)));
+      image.style.width = value + 'px';
+      image.style.height = 'auto';
+    }
+
+    /** Avisa de un cambio hecho desde fuera para sincronizar y guardar. */
+    function commit() {
+      if (!state.ready) return;
+      state.body.classList.toggle('is-empty', isEmptyDocument());
+      if (opts.onInput) opts.onInput(api.getHtml());
+      if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
+    }
+
     function insertTable(rows, cols, withHeader, withBorder) {
       const safeRows = Math.max(1, Math.min(30, Number(rows) || 3));
       const safeCols = Math.max(1, Math.min(12, Number(cols) || 3));
@@ -968,6 +1173,9 @@
         if (event.key === 'F1' && opts.onShortcut) {
           event.preventDefault();
           opts.onShortcut('help', event);
+        } else if (event.key === 'F11' && opts.onShortcut) {
+          event.preventDefault();
+          opts.onShortcut('focus', event);
         }
         return;
       }
@@ -978,15 +1186,21 @@
       } else if (key === 'k' && event.shiftKey) {
         event.preventDefault();
         if (opts.onShortcut) opts.onShortcut('clean', event);
-      } else if (key === 'k') {
+      } else if (key === 'l' && event.shiftKey) {
         event.preventDefault();
         if (opts.onShortcut) opts.onShortcut('link', event);
+      } else if (key === 'k') {
+        event.preventDefault();
+        if (opts.onShortcut) opts.onShortcut('palette', event);
       } else if (key === 'f' && event.shiftKey) {
         event.preventDefault();
         if (opts.onShortcut) opts.onShortcut('indent', event);
       } else if (key === 'd' && event.altKey) {
         event.preventDefault();
         if (opts.onShortcut) opts.onShortcut('download', event);
+      } else if (key === 'p' && event.shiftKey) {
+        event.preventDefault();
+        if (opts.onShortcut) opts.onShortcut('preview', event);
       } else if (key === 'p' && !event.shiftKey) {
         event.preventDefault();
         if (opts.onShortcut) opts.onShortcut('print', event);
@@ -1019,6 +1233,12 @@
       updateImage,
       removeImage,
       setSpellcheck,
+      setLanguage,
+      setPage,
+      getContext,
+      tableAction,
+      setImageWidth,
+      commit,
       insertTable,
       getLinkElement,
       getImageElement,

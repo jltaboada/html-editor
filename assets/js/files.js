@@ -160,19 +160,19 @@
     return { blob, images: index };
   }
 
-  function prepareDocument(html, title) {
+  function prepareDocument(html, title, page) {
     const extracted = App.extractBody(html);
     const safeTitle = title || App.getDocumentTitle(html, 'Documento');
     return {
       body: extracted.html,
       title: safeTitle,
-      document: App.wrapDocument(extracted.html, safeTitle),
+      document: App.wrapDocument(extracted.html, safeTitle, page),
     };
   }
 
   function downloadHtml(html, options) {
     const opts = options || {};
-    const prepared = prepareDocument(html, opts.title);
+    const prepared = prepareDocument(html, opts.title, opts.page);
     const slug = App.safeFileName(prepared.title, 'documento');
     const hasImages = App.hasEmbeddedImages(html);
 

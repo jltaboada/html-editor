@@ -97,6 +97,12 @@
     <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v6h-6"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-row-above" viewBox="0 0 24 24"><path d="M3 21h18M3 17h18M3 13h18"/><path d="M12 2v7M8.5 5.5 12 2l3.5 3.5"/></symbol>
+    <symbol id="i-row-below" viewBox="0 0 24 24"><path d="M3 3h18M3 7h18M3 11h18"/><path d="M12 22v-7M8.5 18.5 12 22l3.5-3.5"/></symbol>
+    <symbol id="i-col-left" viewBox="0 0 24 24"><path d="M21 3v18M17 3v18M13 3v18"/><path d="M2 12h7M5.5 8.5 2 12l3.5 3.5"/></symbol>
+    <symbol id="i-col-right" viewBox="0 0 24 24"><path d="M3 3v18M7 3v18M11 3v18"/><path d="M22 12h-7M18.5 8.5 22 12l-3.5 3.5"/></symbol>
+    <symbol id="i-row-remove" viewBox="0 0 24 24"><path d="M3 4h18M3 9h18M3 14h18"/><path d="m16 19 5 4M21 19l-5 4"/></symbol>
+    <symbol id="i-col-remove" viewBox="0 0 24 24"><path d="M4 3v18M9 3v18M14 3v18"/><path d="m19 16 4 5M23 16l-4 5"/></symbol>
   </svg>
 
   <header class="topbar">
@@ -146,10 +152,20 @@
             <svg class="icon" aria-hidden="true"><use href="#i-doc"/></svg>
             <span><strong>Word</strong><small>Documento .docx editable</small></span>
           </button>
+          <button type="button" role="menuitem" data-export="pdf">
+            <svg class="icon" aria-hidden="true"><use href="#i-printer"/></svg>
+            <span><strong>PDF</strong><small>Con el estilo de la vista previa y el tamaño de página</small></span>
+          </button>
         </div>
       </div>
       <button type="button" class="btn btn--ghost btn--preview" id="previewBtn" title="Ver el documento como una página web (Ctrl+Mayús+P)">
         <svg class="icon" aria-hidden="true"><use href="#i-preview"/></svg><span class="btn-label">Vista previa</span>
+      </button>
+      <button type="button" class="iconbtn" id="paletteBtn" title="Paleta de comandos (Ctrl+K)" aria-label="Abrir la paleta de comandos">
+        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+      </button>
+      <button type="button" class="iconbtn" id="historyBtn" title="Historial de versiones" aria-label="Abrir el historial de versiones">
+        <svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg>
       </button>
       <button type="button" class="iconbtn" id="themeBtn" title="Cambiar al modo oscuro" aria-label="Cambiar al modo oscuro" aria-pressed="false">
         <svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg>
@@ -248,7 +264,7 @@
           </div>
 
           <div class="tb-group">
-            <button type="button" class="tbtn" id="linkBtn" title="Insertar o editar enlace (Ctrl+K)" aria-label="Insertar enlace"><svg class="icon"><use href="#i-link"/></svg></button>
+            <button type="button" class="tbtn" id="linkBtn" title="Insertar o editar enlace (Ctrl+Mayús+L)" aria-label="Insertar enlace"><svg class="icon"><use href="#i-link"/></svg></button>
             <button type="button" class="tbtn" id="imageBtn" title="Insertar o editar imagen" aria-label="Insertar o editar imagen"><svg class="icon"><use href="#i-image"/></svg></button>
             <button type="button" class="tbtn" id="videoBtn" title="Insertar vídeo de YouTube, Vimeo o un archivo" aria-label="Insertar vídeo" aria-haspopup="dialog"><svg class="icon"><use href="#i-video"/></svg></button>
             <button type="button" class="tbtn" id="emojiBtn" title="Insertar un emoticono" aria-label="Insertar emoticono" aria-haspopup="true" aria-expanded="false"><svg class="icon"><use href="#i-smile"/></svg></button>
@@ -265,8 +281,22 @@
           <div class="tb-group">
             <button type="button" class="tbtn" id="clearFormatBtn" title="Quitar todo el formato" aria-label="Quitar formato"><svg class="icon"><use href="#i-eraser"/></svg></button>
             <button type="button" class="tbtn toggle is-active" id="spellcheckBtn" title="Corrector ortográfico del navegador" aria-label="Corrector ortográfico" aria-pressed="true"><svg class="icon"><use href="#i-spellcheck"/></svg></button>
+            <label class="tb-lang" title="Idioma de la corrección ortográfica">
+              <span class="sr-only">Idioma de corrección</span>
+              <select id="spellLang" aria-label="Idioma de corrección ortográfica">
+                <option value="auto">Auto</option>
+                <option value="es" selected>ES</option>
+                <option value="en">EN</option>
+                <option value="fr">FR</option>
+                <option value="de">DE</option>
+                <option value="pt">PT</option>
+                <option value="gl">GL</option>
+                <option value="ca">CA</option>
+                <option value="it">IT</option>
+              </select>
+            </label>
             <button type="button" class="tbtn" id="printBtn" title="Imprimir el documento (Ctrl+P)" aria-label="Imprimir documento"><svg class="icon"><use href="#i-printer"/></svg></button>
-            <button type="button" class="tbtn" id="fullscreenBtn" title="Pantalla completa" aria-label="Pantalla completa" aria-pressed="false"><svg class="icon"><use href="#i-layout"/></svg></button>
+            <button type="button" class="tbtn" id="fullscreenBtn" title="Modo enfoque: solo la hoja (F11)" aria-label="Modo enfoque" aria-pressed="false"><svg class="icon"><use href="#i-layout"/></svg></button>
           </div>
         </div>
 
@@ -280,6 +310,7 @@
           <span class="pane-status-item" id="visualChars">0 caracteres</span>
           <span class="pane-status-sep" aria-hidden="true"></span>
           <span class="pane-status-item" id="visualWords">0 palabras</span>
+          <button type="button" class="pane-status-btn page-chip" id="pageInfo" title="Formato y márgenes de la página" aria-haspopup="dialog">Hoja completa</button>
         </div>
       </section>
 
@@ -326,6 +357,9 @@
         </div>
         <div class="pane-status pane-status--source" id="sourceStatusBar" role="status" aria-live="off" aria-label="Estadísticas del editor de código">
           <span class="pane-status-label" id="sourceStatusLang">HTML</span>
+          <button type="button" class="pane-status-btn lint-chip is-ok" id="lintStatus" title="Revisar el HTML" aria-haspopup="dialog">
+            <svg class="icon icon--xs" aria-hidden="true"><use href="#i-check"/></svg><span id="lintText">HTML correcto</span>
+          </button>
           <span class="pane-status-item" id="sourceChars">0 caracteres</span>
           <span class="pane-status-sep" aria-hidden="true"></span>
           <span class="pane-status-item" id="sourceWords">0 palabras</span>
@@ -387,6 +421,28 @@
     <div class="status-credit">© 2026 - <a href="https://jltaboada.com" target="_blank" rel="noopener">jltaboada</a></div>
     <div class="status-right" aria-hidden="true"></div>
   </footer>
+
+  <button type="button" class="focus-exit" id="focusExit" title="Salir del modo enfoque (Esc)" hidden>
+    <svg class="icon" aria-hidden="true"><use href="#i-compress"/></svg><span>Salir del enfoque</span>
+  </button>
+
+  <div class="table-tools" id="tableTools" role="toolbar" aria-label="Editar la tabla" hidden>
+    <span class="table-tools-label">Tabla</span>
+    <button type="button" class="table-tool" data-table-action="row-above" title="Añadir fila encima" aria-label="Añadir fila encima"><svg class="icon"><use href="#i-row-above"/></svg></button>
+    <button type="button" class="table-tool" data-table-action="row-below" title="Añadir fila debajo" aria-label="Añadir fila debajo"><svg class="icon"><use href="#i-row-below"/></svg></button>
+    <button type="button" class="table-tool" data-table-action="col-left" title="Añadir columna a la izquierda" aria-label="Añadir columna a la izquierda"><svg class="icon"><use href="#i-col-left"/></svg></button>
+    <button type="button" class="table-tool" data-table-action="col-right" title="Añadir columna a la derecha" aria-label="Añadir columna a la derecha"><svg class="icon"><use href="#i-col-right"/></svg></button>
+    <span class="table-tools-sep" aria-hidden="true"></span>
+    <button type="button" class="table-tool table-tool--danger" data-table-action="row-remove" title="Quitar esta fila" aria-label="Quitar esta fila"><svg class="icon"><use href="#i-row-remove"/></svg></button>
+    <button type="button" class="table-tool table-tool--danger" data-table-action="col-remove" title="Quitar esta columna" aria-label="Quitar esta columna"><svg class="icon"><use href="#i-col-remove"/></svg></button>
+  </div>
+
+  <div class="image-tools" id="imageTools" hidden>
+    <div class="image-tools-box" id="imageToolsBox">
+      <span class="image-size" id="imageSizeLabel">300 px</span>
+      <button type="button" class="image-handle" id="imageHandle" title="Arrastra para cambiar el tamaño" aria-label="Redimensionar la imagen"></button>
+    </div>
+  </div>
 
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 
@@ -742,6 +798,7 @@
             <svg class="icon" aria-hidden="true"><use href="#i-doc"/></svg><span>Móvil</span>
           </button>
         </div>
+        <button type="button" class="iconbtn" id="previewPdf" title="Imprimir o guardar como PDF" aria-label="Imprimir o guardar como PDF"><svg class="icon" aria-hidden="true"><use href="#i-printer"/></svg></button>
         <button type="button" class="iconbtn" id="previewRefresh" title="Actualizar la vista previa" aria-label="Actualizar la vista previa"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg></button>
         <button type="button" class="iconbtn" id="previewOpen" title="Abrir en una pestaña nueva (con scripts)" aria-label="Abrir en una pestaña nueva"><svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></button>
         <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar la vista previa"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
@@ -755,6 +812,120 @@
     </div>
   </dialog>
 
+  <dialog class="dialog dialog--sm" id="pageDialog" aria-labelledby="pageTitle">
+    <form id="pageForm">
+      <header class="dialog-head">
+        <h2 id="pageTitle">Formato de página</h2>
+        <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <label class="field">
+          <span>Formato</span>
+          <select id="pageSize">
+            <option value="full">Hoja completa (sin límite)</option>
+            <option value="a4">A4 (210 × 297 mm)</option>
+            <option value="letter">Carta (216 × 279 mm)</option>
+            <option value="legal">Legal (216 × 356 mm)</option>
+            <option value="a5">A5 (148 × 210 mm)</option>
+          </select>
+        </label>
+        <div class="field-row">
+          <label class="field field--half">
+            <span>Orientación</span>
+            <select id="pageOrientation">
+              <option value="portrait">Vertical</option>
+              <option value="landscape">Horizontal</option>
+            </select>
+          </label>
+          <label class="field field--half">
+            <span>Márgenes</span>
+            <select id="pageMargins">
+              <option value="normal">Normales</option>
+              <option value="narrow">Estrechos</option>
+              <option value="wide">Amplios</option>
+              <option value="none">Sin márgenes</option>
+              <option value="custom">Personalizados…</option>
+            </select>
+          </label>
+        </div>
+        <div class="page-custom" id="pageCustomFields" hidden>
+          <label class="field field--quarter"><span>Arriba (mm)</span><input type="number" id="pageTop" min="0" max="80" step="0.5"></label>
+          <label class="field field--quarter"><span>Derecha (mm)</span><input type="number" id="pageRight" min="0" max="80" step="0.5"></label>
+          <label class="field field--quarter"><span>Abajo (mm)</span><input type="number" id="pageBottom" min="0" max="80" step="0.5"></label>
+          <label class="field field--quarter"><span>Izquierda (mm)</span><input type="number" id="pageLeft" min="0" max="80" step="0.5"></label>
+        </div>
+        <div class="page-summary" id="pageSummary" aria-live="polite"></div>
+        <p class="dialog-hint">El tamaño se aplica a la hoja del editor, a la vista previa y al PDF. Con «Hoja completa» la hoja ocupa todo el panel.</p>
+      </div>
+      <footer class="dialog-foot">
+        <button type="button" class="btn btn--danger-ghost" id="pageReset">Hoja completa</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn--ghost" data-close-dialog>Cancelar</button>
+        <button type="submit" class="btn btn--primary">Aplicar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog dialog--history" id="historyDialog" aria-labelledby="historyTitle">
+    <header class="dialog-head">
+      <h2 id="historyTitle">Historial de versiones</h2>
+      <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </header>
+    <div class="dialog-body">
+      <div class="history-toolbar">
+        <label class="history-interval" for="historyInterval">Guardar una versión cada</label>
+        <select id="historyInterval">
+          <option value="1">1 minuto</option>
+          <option value="2">2 minutos</option>
+          <option value="5">5 minutos</option>
+          <option value="10">10 minutos</option>
+          <option value="15">15 minutos</option>
+          <option value="30">30 minutos</option>
+          <option value="0">Solo manual</option>
+        </select>
+        <button type="button" class="btn btn--soft btn--sm" id="historySaveNow"><svg class="icon" aria-hidden="true"><use href="#i-save"/></svg> Guardar ahora</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+      <p class="history-empty" id="historyEmpty" hidden>Aún no hay versiones guardadas. Mientras escribes se irán guardando automáticamente.</p>
+      <p class="dialog-hint">Las versiones se guardan solo en este navegador (hasta 30). Restaurar una versión se puede deshacer con <kbd>Ctrl</kbd>+<kbd>Z</kbd>.</p>
+    </div>
+    <footer class="dialog-foot">
+      <button type="button" class="btn btn--danger-ghost" id="historyClear">Borrar historial</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn--ghost" data-close-dialog>Cerrar</button>
+    </footer>
+  </dialog>
+
+  <dialog class="dialog dialog--wide" id="lintDialog" aria-labelledby="lintTitle">
+    <header class="dialog-head">
+      <h2 id="lintTitle">Revisión del HTML</h2>
+      <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </header>
+    <div class="dialog-body">
+      <div class="lint-summary" id="lintSummary"></div>
+      <ul class="lint-list" id="lintList"></ul>
+      <p class="lint-clean" id="lintClean" hidden>No se han encontrado problemas: las etiquetas están cerradas y los atributos son correctos.</p>
+    </div>
+    <footer class="dialog-foot">
+      <button type="button" class="btn btn--soft btn--sm" id="lintRefresh"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg> Revisar de nuevo</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn--ghost" data-close-dialog>Cerrar</button>
+    </footer>
+  </dialog>
+
+  <dialog class="dialog dialog--palette" id="paletteDialog" aria-label="Paleta de comandos">
+    <div class="palette">
+      <div class="palette-search">
+        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="text" id="paletteInput" placeholder="Escribe un comando: tabla, oscuro, PDF…" autocomplete="off" spellcheck="false" aria-label="Buscar comando" aria-controls="paletteList">
+        <kbd class="palette-esc">Esc</kbd>
+      </div>
+      <div class="palette-list" id="paletteList" role="listbox" aria-label="Comandos disponibles"></div>
+      <p class="palette-empty" id="paletteEmpty" hidden></p>
+      <div class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> moverse</span><span><kbd>Enter</kbd> ejecutar</span><span><kbd>Esc</kbd> cerrar</span></div>
+    </div>
+  </dialog>
+
   <dialog class="dialog dialog--help" id="helpDialog" aria-labelledby="helpTitle">
     <header class="dialog-head">
       <h2 id="helpTitle">Atajos y ayuda</h2>
@@ -765,13 +936,15 @@
         <h3><svg class="icon" aria-hidden="true"><use href="#i-keyboard"/></svg> Atajos</h3>
         <dl class="shortcuts">
           <div><dt><kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>I</kbd> / <kbd>U</kbd></dt><dd>Negrita, cursiva, subrayado</dd></div>
-          <div><dt><kbd>Ctrl</kbd>+<kbd>K</kbd></dt><dd>Insertar o editar enlace</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>K</kbd></dt><dd>Abrir la paleta de comandos</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></dt><dd>Insertar o editar enlace</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>S</kbd></dt><dd>Guardar borrador en este navegador</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd></dt><dd>Ejecutar limpieza</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></dt><dd>Indentar el código</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></dt><dd>Descargar HTML</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>P</kbd></dt><dd>Imprimir solo el documento</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd></dt><dd>Abrir la vista previa</dd></div>
+          <div><dt><kbd>F11</kbd></dt><dd>Modo enfoque (solo la hoja; <kbd>Esc</kbd> para salir)</dd></div>
           <div><dt><kbd>F1</kbd></dt><dd>Abrir esta ayuda</dd></div>
         </dl>
       </section>
@@ -801,9 +974,38 @@
         <p>El botón <strong>HTML incrustado</strong> (solo en modo MD) decide qué pasa con lo que Markdown no sabe representar. Activado, esos fragmentos (colores, tipografías, vídeos, fórmulas…) viajan como HTML dentro del Markdown y no se pierden al volver a HTML. Desactivado, el Markdown queda limpio y solo con sintaxis estándar. Puedes descargar el documento como <code>.md</code> desde el menú <strong>Descargar</strong>.</p>
       </section>
       <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg> Paleta de comandos</h3>
+        <p>Pulsa <kbd>Ctrl</kbd>+<kbd>K</kbd> (o el icono de la lupa) y escribe lo que quieres hacer: «tabla», «oscuro», «PDF», «historial», «enfoque»… Usa las flechas para moverte y <kbd>Enter</kbd> para ejecutar. Cada comando muestra su atajo cuando lo tiene.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg> Historial de versiones</h3>
+        <p>El editor guarda una versión del documento cada pocos minutos (puedes cambiar el intervalo o guardar una a mano desde el icono del reloj). En el historial verás la fecha, el tamaño y una vista previa de cada versión; <strong>Restaurar</strong> la recupera y puedes deshacerlo con <kbd>Ctrl</kbd>+<kbd>Z</kbd>. Las versiones se guardan solo en este navegador.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-doc"/></svg> Página y PDF</h3>
+        <p>El botón del formato en la barra inferior del editor visual abre los ajustes de página: <strong>hoja completa</strong> (por defecto), <strong>A4</strong>, <strong>Carta</strong>, <strong>Legal</strong> o <strong>A5</strong>, con orientación y márgenes normales, estrechos, amplios, sin márgenes o personalizados en milímetros. El formato se aplica a la hoja del editor, a la vista previa, al HTML descargado y al PDF.</p>
+        <p>La opción <strong>PDF</strong> del menú Descargar (y el botón de la impresora en la vista previa) abre el diálogo de impresión del navegador con el mismo CSS de la vista previa; elige «Guardar como PDF» para obtener el archivo.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg> Revisión del HTML</h3>
+        <p>La barra inferior del panel de código indica si el HTML tiene problemas: etiquetas sin cerrar, cierres que no corresponden, atributos repetidos o en mayúsculas, ids duplicados, imágenes sin <code>alt</code>… Pulsa el aviso para ver la lista y saltar a la línea exacta. La revisión es orientativa y no modifica el documento.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-table"/></svg> Tablas e imágenes</h3>
+        <p>Al colocar el cursor dentro de una tabla aparece una barra sobre ella para añadir filas o columnas arriba, abajo, a la izquierda o a la derecha, y para quitar la fila o la columna actual. Al hacer clic en una imagen aparecen un marco y un tirador en la esquina: arrástralo para cambiar el ancho manteniendo la proporción. El doble clic sigue abriendo los ajustes de la imagen.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-spellcheck"/></svg> Corrección y idioma</h3>
+        <p>El botón de la corrección activa o desactiva el corrector del navegador y el selector de al lado elige el idioma del texto (ES, EN, FR, DE, PT, GL, CA, IT o automático). El navegador usa sus propios diccionarios: si no tiene instalado el idioma, no marcará errores.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg> Notas al pie y tareas en Markdown</h3>
+        <p>Escribe <code>[^1]</code> en el texto y <code>[^1]: tu nota</code> en cualquier línea para crear una nota al pie. Las notas se numeran por orden de aparición, enlazan de ida y vuelta y se conservan al pasar de Markdown a HTML y de vuelta. Las listas de tareas se escriben como <code>- [x] hecho</code> y <code>- [ ] pendiente</code>; en el editor visual puedes marcar y desmarcar las casillas con un clic.</p>
+      </section>
+      <section>
         <h3><svg class="icon" aria-hidden="true"><use href="#i-columns"/></svg> Vistas y paneles</h3>
         <p><strong>Dividido</strong> muestra el editor visual y el de código. Si ya estás en esa vista, vuelve a pulsarlo para <strong>intercambiar los paneles</strong>: el código pasa a la izquierda y el visual a la derecha. El orden se recuerda entre sesiones.</p>
-        <p>El botón de la luna cambia entre el modo claro y el oscuro. El icono del folio con el signo + abre una página en blanco, igual que en el panel de código. <strong>Pantalla completa</strong> deja solo el editor visual.</p>
+        <p>El botón de la luna cambia entre el modo claro y el oscuro. El icono del folio con el signo + abre una página en blanco, igual que en el panel de código. El botón de <strong>modo enfoque</strong> (o <kbd>F11</kbd>) deja solo la hoja: oculta la barra superior, la de herramientas y el panel de código; se sale con <kbd>Esc</kbd>, <kbd>F11</kbd> o el botón «Salir del enfoque».</p>
       </section>
       <section>
         <h3><svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Limpieza</h3>
@@ -860,6 +1062,10 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/emojis.js"></script>
   <script src="assets/js/demo.js"></script>
+  <script src="assets/js/page.js"></script>
+  <script src="assets/js/lint.js"></script>
+  <script src="assets/js/history.js"></script>
+  <script src="assets/js/commands.js"></script>
   <script src="assets/js/cleaner.js"></script>
   <script src="assets/js/wysiwyg.js"></script>
   <script src="assets/js/files.js"></script>

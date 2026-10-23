@@ -621,8 +621,9 @@
     };
   };
 
-  App.wrapDocument = function (bodyHtml, title) {
+  App.wrapDocument = function (bodyHtml, title, page) {
     const safeTitle = App.escapeHtml(title || 'Documento');
+    const pageCss = App.Page ? App.Page.css(page) : '';
     const styles = [
       '    :root { color-scheme: light; }',
       '    body { max-width: 820px; margin: 0 auto; padding: 48px 24px; color: #222222; background: #fff; font-family: "Varela Round", "Trebuchet MS", "Segoe UI", system-ui, Arial, sans-serif; font-size: 16px; line-height: 1.65; }',
@@ -648,8 +649,17 @@
       '    .math--inline { display: inline-block; vertical-align: middle; max-width: 100%; }',
       '    .math--block { display: block; margin: 1em 0; overflow-x: auto; text-align: center; }',
       '    .math math { font-size: 1.08em; }',
+      '    ul:has(> li > input[type="checkbox"]), ol:has(> li > input[type="checkbox"]) { list-style: none; padding-left: .1em; }',
+      '    li > input[type="checkbox"] { width: 1.05em; height: 1.05em; margin: 0 .5em 0 0; vertical-align: -.12em; accent-color: #9c3b2d; }',
+      '    .footnotes { margin-top: 2.2em; border-top: 1px solid #e0e0e0; padding-top: .9em; font-size: .86em; color: #555; }',
+      '    .footnotes ol { padding-left: 1.6em; }',
+      '    .footnotes li { margin: .35em 0; }',
+      '    .footnote-ref { font-size: .74em; line-height: 0; }',
+      '    .footnote-ref a { text-decoration: none; font-weight: 700; }',
+      '    .footnote-backref { text-decoration: none; margin-left: .25em; }',
+      pageCss,
       '    @media print { body { padding: 0; } .video-embed { break-inside: avoid; } }',
-    ].join('\n');
+    ].filter(Boolean).join('\n');
     return [
       '<!doctype html>',
       '<html lang="es">',
