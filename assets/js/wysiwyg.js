@@ -71,6 +71,45 @@
     sup, sub { line-height: 0; }
     ::selection { background: rgba(2, 135, 77, .22); }
     table { table-layout: auto; }
+    iframe { max-width: 100%; border: 0; }
+    figure.video-embed { margin: 1.2em 0; }
+    .video-frame {
+      position: relative;
+      height: 0;
+      padding-bottom: 56.25%;
+      overflow: hidden;
+      border-radius: 8px;
+      background: #0f172a;
+    }
+    .video-frame iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    .video-frame::after {
+      content: "▶";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255, 255, 255, .82);
+      font-size: 34px;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .video-embed figcaption { margin-top: 6px; }
+    .video-embed--file video {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: #0f172a;
+    }
+    /* Dentro del editor el vídeo no se reproduce: el clic selecciona el marco. */
+    .video-frame iframe, .video-embed--file video { pointer-events: none; }
     @media (max-width: 640px) {
       body { padding: 28px 22px 80px; }
     }
@@ -694,6 +733,9 @@
       } else if (key === 'd' && event.altKey) {
         event.preventDefault();
         if (opts.onShortcut) opts.onShortcut('download', event);
+      } else if (key === 'p' && !event.shiftKey) {
+        event.preventDefault();
+        if (opts.onShortcut) opts.onShortcut('print', event);
       }
     }
 

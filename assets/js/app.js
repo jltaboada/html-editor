@@ -142,7 +142,7 @@
     state.cm.on('change', function () {
       if (state.suppressSource) return;
       state.compressed = false;
-      syncVisualDebounced.cancel();
+      cancelVisualSync();
       state.lastEdited = 'source';
       markDirty();
       syncSourceDebounced();
@@ -156,7 +156,6 @@
       setTimeout(autoFormatSource, 60);
     });
     state.cm.on('blur', function () {
-      autoFormatDebounced.cancel();
       autoFormatSource();
     });
   }
@@ -201,13 +200,14 @@
   }
 
   function flushVisualToSource() {
-    syncVisualDebounced.cancel();
-    autoFormatDebounced.cancel();
+    cancelVisualSync();
     if (!state.wysiwyg || !state.wysiwyg.isReady) return;
     if (!state.cm) return;
     const value = formatHtml(state.wysiwyg.getHtml());
     if (state.cm.getValue() === value) return;
+    if (state.compressed) state.compressed = false;
     setSource(value, { fromVisual: true });
+    visualSyncLast = Date.now();
   }
 
   function flushSourceToVisual() {
@@ -248,8 +248,7 @@
       updateEncodingBtn();
     }
     markDirty();
-    syncVisualDebounced(html);
-    autoFormatDebounced();
+    scheduleVisualSync(html);
     scheduleMeta();
   }
 
@@ -284,6 +283,7 @@
     else if (action === 'link') openLinkDialog();
     else if (action === 'indent') indentCode();
     else if (action === 'download') exportAs('html');
+    else if (action === 'print') printDocument();
     else if (action === 'help') openHelp();
   }
 
@@ -450,6 +450,7 @@
   function setView(view, silent) {
     if (VIEWS.indexOf(view) === -1) view = 'split';
     closeAllSelectMenus();
+    closeEmojiPop();
     if (!silent) {
       if (state.lastEdited === 'visual') flushVisualToSource();
       else flushSourceToVisual();
@@ -1149,6 +1150,496 @@
     App.toast(color === 'clear' ? 'Color eliminado.' : 'Color aplicado.', 'success', 1800);
   }
 
+  /* ---------- Emoticonos y caracteres especiales ---------- */
+
+  const glyphState = {
+    emojiTab: 'comunes',
+    emojiQuery: '',
+    charTab: '',
+    charQuery: '',
+  };
+
+  let emojiListCache = null;
+  let emojiCategoryCache = null;
+
+  function normalizeText(value) {
+    return String(value == null ? '' : value)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function getEmojiList() {
+    if (emojiListCache) return emojiListCache;
+    const list = [];
+    (Array.isArray(App.EMOJI_GROUPS) ? App.EMOJI_GROUPS : []).forEach(function (group) {
+      (group.emojis || []).forEach(function (raw) {
+        const parts = String(raw).split('|');
+        const char = parts[0];
+        if (!char) return;
+        const label = parts[1] || '';
+        list.push({ char: char, label: label, group: group.id, search: normalizeText(label + ' ' + group.label) });
+      });
+    });
+    emojiListCache = list;
+    return list;
+  }
+
+  function getEmojiCategories() {
+    if (emojiCategoryCache) return emojiCategoryCache;
+    const groups = Array.isArray(App.EMOJI_GROUPS) ? App.EMOJI_GROUPS : [];
+    const lookup = new Map();
+    getEmojiList().forEach(function (item) { if (!lookup.has(item.char)) lookup.set(item.char, item); });
+    const common = (Array.isArray(App.EMOJI_COMMON) ? App.EMOJI_COMMON : []).map(function (char) {
+      const found = lookup.get(char);
+      return { char: char, label: found ? found.label : 'Emoticono' };
+    });
+    const list = [{ id: 'comunes', label: 'Más usados', items: common }];
+    groups.forEach(function (group) {
+      list.push({
+        id: group.id,
+        label: group.label,
+        items: (group.emojis || []).map(function (raw) {
+          const parts = String(raw).split('|');
+          return { char: parts[0], label: parts[1] || '' };
+        }).filter(function (item) { return !!item.char; }),
+      });
+    });
+    emojiCategoryCache = list;
+    return list;
+  }
+
+  function getCharCategories() {
+    return (Array.isArray(App.SPECIAL_CHARS) ? App.SPECIAL_CHARS : []).map(function (group) {
+      return {
+        id: group.id,
+        label: group.label,
+        items: (group.chars || []).map(function (pair) {
+          return { char: pair[0], label: pair[1] || '' };
+        }),
+      };
+    });
+  }
+
+  function renderGlyphTabs(container, categories, activeId, query, onPick) {
+    if (!container) return;
+    container.innerHTML = '';
+    categories.forEach(function (category) {
+      const active = !query && category.id === activeId;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'glyph-tab' + (active ? ' is-active' : '');
+      button.setAttribute('role', 'tab');
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+      button.textContent = category.label;
+      button.addEventListener('click', function () { onPick(category.id); });
+      container.appendChild(button);
+    });
+  }
+
+  function renderGlyphGrid(grid, items, emptyEl, emptyText) {
+    if (!grid) return;
+    grid.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+    items.forEach(function (item) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'glyph-btn';
+      button.dataset.char = item.char;
+      button.title = item.label || item.char;
+      button.setAttribute('role', 'option');
+      button.setAttribute('aria-label', 'Insertar ' + (item.label || item.char));
+      button.textContent = item.char;
+      fragment.appendChild(button);
+    });
+    grid.appendChild(fragment);
+    if (emptyEl) {
+      if (emptyText) emptyEl.textContent = emptyText;
+      emptyEl.hidden = items.length > 0;
+    }
+    grid.scrollTop = 0;
+  }
+
+  function renderEmojiPalette() {
+    const grid = $('#emojiGrid');
+    if (!grid) return;
+    const categories = getEmojiCategories();
+    if (!categories.length) {
+      renderGlyphGrid(grid, [], $('#emojiEmpty'), 'No se han podido cargar los emoticonos. Recarga la página.');
+      return;
+    }
+    let active = categories.filter(function (category) { return category.id === glyphState.emojiTab; })[0] || categories[0];
+    const query = normalizeText(glyphState.emojiQuery).trim();
+    renderGlyphTabs($('#emojiTabs'), categories, active.id, query, function (id) {
+      glyphState.emojiTab = id;
+      glyphState.emojiQuery = '';
+      const search = $('#emojiSearch');
+      if (search) search.value = '';
+      renderEmojiPalette();
+    });
+    let items;
+    let emptyText;
+    if (query) {
+      items = getEmojiList().filter(function (item) { return item.search.indexOf(query) !== -1; });
+      const total = items.length;
+      items = items.slice(0, 400);
+      emptyText = 'No hay emoticonos para «' + glyphState.emojiQuery.trim() + '».';
+      const count = $('#emojiCount');
+      if (count) count.textContent = total + (total === 1 ? ' resultado' : ' resultados');
+    } else {
+      items = active.items;
+      const count = $('#emojiCount');
+      if (count) count.textContent = items.length + (items.length === 1 ? ' emoticono' : ' emoticonos');
+      emptyText = 'Esta categoría está vacía.';
+    }
+    renderGlyphGrid(grid, items, $('#emojiEmpty'), emptyText);
+  }
+
+  function openEmojiPop(button) {
+    const pop = $('#emojiPop');
+    if (!pop) return;
+    if (!pop.hidden) {
+      closeEmojiPop();
+      return;
+    }
+    closeColorPop();
+    closeDownloadMenu();
+    closeAllSelectMenus();
+    if (state.wysiwyg) state.wysiwyg.saveSelection();
+    glyphState.emojiQuery = '';
+    const search = $('#emojiSearch');
+    if (search) search.value = '';
+    const hint = $('#emojiHint');
+    if (hint) hint.textContent = 'Busca entre ' + getEmojiList().length.toLocaleString('es-ES') + ' emoticonos';
+    renderEmojiPalette();
+    pop.hidden = false;
+    placeGlyphPopover(pop, button);
+    if (button) button.setAttribute('aria-expanded', 'true');
+    if (search) setTimeout(function () { search.focus({ preventScroll: true }); }, 30);
+  }
+
+  function closeEmojiPop() {
+    const pop = $('#emojiPop');
+    if (pop) pop.hidden = true;
+    const button = $('#emojiBtn');
+    if (button) button.setAttribute('aria-expanded', 'false');
+  }
+
+  function placeGlyphPopover(pop, anchor) {
+    if (!pop || !anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const width = pop.offsetWidth || 416;
+    const height = pop.offsetHeight || 360;
+    pop.style.left = Math.round(clamp(rect.left, 8, Math.max(8, global.innerWidth - width - 8))) + 'px';
+    const below = rect.bottom + 8;
+    const top = below + height > global.innerHeight - 8 ? Math.max(8, rect.top - height - 8) : below;
+    pop.style.top = Math.round(clamp(top, 8, Math.max(8, global.innerHeight - height - 8))) + 'px';
+  }
+
+  function insertGlyph(char) {
+    if (!char || !state.wysiwyg || !state.wysiwyg.isReady) return;
+    state.wysiwyg.restoreSelection();
+    state.wysiwyg.insertHtml(App.escapeHtml(char));
+  }
+
+  function openCharDialog() {
+    if (!state.wysiwyg) return;
+    state.wysiwyg.saveSelection();
+    const categories = getCharCategories();
+    if (!glyphState.charTab && categories.length) glyphState.charTab = categories[0].id;
+    glyphState.charQuery = '';
+    const search = $('#charSearch');
+    if (search) search.value = '';
+    renderCharPalette();
+    const dialog = $('#charDialog');
+    if (dialog) dialog.showModal();
+    setTimeout(function () { if (search) search.focus({ preventScroll: true }); }, 60);
+  }
+
+  function renderCharPalette() {
+    const grid = $('#charGrid');
+    if (!grid) return;
+    const categories = getCharCategories();
+    if (!categories.length) {
+      renderGlyphGrid(grid, [], $('#charEmpty'), 'No se han podido cargar los caracteres.');
+      return;
+    }
+    let active = categories.filter(function (category) { return category.id === glyphState.charTab; })[0] || categories[0];
+    const query = normalizeText(glyphState.charQuery).trim();
+    renderGlyphTabs($('#charTabs'), categories, active.id, query, function (id) {
+      glyphState.charTab = id;
+      glyphState.charQuery = '';
+      const search = $('#charSearch');
+      if (search) search.value = '';
+      renderCharPalette();
+    });
+    let items;
+    if (query) {
+      items = [];
+      categories.forEach(function (category) {
+        category.items.forEach(function (item) {
+          if (normalizeText(item.label).indexOf(query) !== -1) items.push(item);
+        });
+      });
+      items = items.slice(0, 400);
+    } else {
+      items = active.items;
+    }
+    renderGlyphGrid(grid, items, $('#charEmpty'), 'No hay caracteres para «' + glyphState.charQuery.trim() + '».');
+  }
+
+  function bindGlyphPalettes() {
+    const emojiButton = $('#emojiBtn');
+    if (emojiButton) emojiButton.addEventListener('click', function (event) { event.stopPropagation(); openEmojiPop(emojiButton); });
+    const emojiClose = $('#emojiPopClose');
+    if (emojiClose) emojiClose.addEventListener('click', closeEmojiPop);
+    const emojiSearch = $('#emojiSearch');
+    if (emojiSearch) {
+      emojiSearch.addEventListener('input', function () {
+        glyphState.emojiQuery = emojiSearch.value;
+        renderEmojiPalette();
+      });
+    }
+    const emojiGrid = $('#emojiGrid');
+    if (emojiGrid) {
+      emojiGrid.addEventListener('click', function (event) {
+        const button = event.target.closest('.glyph-btn');
+        if (!button) return;
+        insertGlyph(button.dataset.char);
+        button.focus({ preventScroll: true });
+      });
+      emojiGrid.addEventListener('keydown', onGlyphGridKeydown);
+    }
+    const emojiPop = $('#emojiPop');
+    if (emojiPop) {
+      emojiPop.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeEmojiPop();
+          if (emojiButton) emojiButton.focus();
+        }
+      });
+    }
+
+    const charButton = $('#charBtn');
+    if (charButton) charButton.addEventListener('click', openCharDialog);
+    const charSearch = $('#charSearch');
+    if (charSearch) {
+      charSearch.addEventListener('input', function () {
+        glyphState.charQuery = charSearch.value;
+        renderCharPalette();
+      });
+    }
+    const charGrid = $('#charGrid');
+    if (charGrid) {
+      charGrid.addEventListener('click', function (event) {
+        const button = event.target.closest('.glyph-btn');
+        if (!button) return;
+        insertGlyph(button.dataset.char);
+        button.classList.add('is-just-inserted');
+        button.focus({ preventScroll: true });
+        setTimeout(function () { button.classList.remove('is-just-inserted'); }, 260);
+      });
+      charGrid.addEventListener('keydown', onGlyphGridKeydown);
+    }
+  }
+
+  function onGlyphGridKeydown(event) {
+    const grid = event.currentTarget;
+    const buttons = Array.prototype.slice.call(grid.querySelectorAll('.glyph-btn'));
+    const index = buttons.indexOf(document.activeElement);
+    if (index === -1) return;
+    const columns = getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length || 9;
+    let next = -1;
+    if (event.key === 'ArrowRight') next = index + 1;
+    else if (event.key === 'ArrowLeft') next = index - 1;
+    else if (event.key === 'ArrowDown') next = index + columns;
+    else if (event.key === 'ArrowUp') next = index - columns;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = buttons.length - 1;
+    if (next < 0 || next >= buttons.length || next === index) return;
+    event.preventDefault();
+    buttons[next].focus();
+  }
+
+  /* ---------- Vídeo incrustado ---------- */
+
+  function parseVideoUrl(input) {
+    let raw = String(input == null ? '' : input).trim();
+    if (!raw) return null;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(raw) && !raw.startsWith('//')) raw = 'https://' + raw;
+    if (raw.startsWith('//')) raw = 'https:' + raw;
+    let url;
+    try { url = new URL(raw); } catch (error) { return null; }
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+    const start = (function () {
+      const value = url.searchParams.get('start') || url.searchParams.get('t') || (url.hash.match(/t=(\d+)/) || [])[1];
+      const seconds = parseInt(value, 10);
+      return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 86400) : 0;
+    })();
+
+    if (host === 'youtu.be') {
+      const id = url.pathname.slice(1).split('/')[0];
+      if (/^[\w-]{6,}$/.test(id)) return { type: 'youtube', label: 'YouTube', src: 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0' + (start ? '&start=' + start : '') };
+    }
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com' || host === 'youtube-nocookie.com') {
+      let id = '';
+      if (url.pathname === '/watch') id = url.searchParams.get('v') || '';
+      else {
+        const match = url.pathname.match(/^\/(?:embed|shorts|live|v)\/([\w-]{6,})/);
+        if (match) id = match[1];
+      }
+      if (/^[\w-]{6,}$/.test(id)) return { type: 'youtube', label: 'YouTube', src: 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0' + (start ? '&start=' + start : '') };
+      return null;
+    }
+    if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+      const match = url.pathname.match(/(\d{6,})/);
+      if (match) return { type: 'vimeo', label: 'Vimeo', src: 'https://player.vimeo.com/video/' + match[1] };
+      return null;
+    }
+    if (host === 'dailymotion.com' || host === 'dai.ly') {
+      let id = '';
+      if (host === 'dai.ly') id = url.pathname.slice(1).split('/')[0];
+      else {
+        const match = url.pathname.match(/\/video\/([\w]+)/);
+        if (match) id = match[1];
+      }
+      if (/^[a-zA-Z0-9]{5,}$/.test(id)) return { type: 'dailymotion', label: 'Dailymotion', src: 'https://www.dailymotion.com/embed/video/' + id };
+      return null;
+    }
+    if (/\.(mp4|webm|ogv|ogg|m4v|mov)(?:$|[?#])/i.test(url.href)) {
+      return { type: 'file', label: 'Archivo de vídeo', src: url.href };
+    }
+    return null;
+  }
+
+  function describeVideo(info) {
+    if (!info) return '';
+    if (info.type === 'file') return 'Archivo de vídeo · se insertará con controles nativos.';
+    return info.label + ' · el vídeo se reproducirá dentro del documento.';
+  }
+
+  function buildVideoHtml(info, caption) {
+    const figcaption = caption ? '<figcaption>' + App.escapeHtml(caption) + '</figcaption>' : '';
+    if (info.type === 'file') {
+      return '<figure class="video-embed video-embed--file">' +
+        '<video controls preload="metadata" src="' + App.escapeHtml(info.src) + '"></video>' +
+        figcaption +
+        '</figure>';
+    }
+    return '<figure class="video-embed">' +
+      '<div class="video-frame">' +
+      '<iframe src="' + App.escapeHtml(info.src) + '" title="' + App.escapeHtml(caption || 'Vídeo') + '" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>' +
+      '</div>' +
+      figcaption +
+      '</figure>';
+  }
+
+  function openVideoDialog() {
+    if (!state.wysiwyg) return;
+    state.wysiwyg.saveSelection();
+    const dialog = $('#videoDialog');
+    if (!dialog) return;
+    $('#videoUrl').value = '';
+    $('#videoCaption').value = '';
+    $('#videoError').hidden = true;
+    const note = $('#videoNote');
+    if (note) { note.hidden = true; note.classList.remove('is-bad'); note.textContent = ''; }
+    dialog.showModal();
+    setTimeout(function () { $('#videoUrl').focus(); }, 40);
+  }
+
+  function updateVideoNote() {
+    const input = $('#videoUrl');
+    const note = $('#videoNote');
+    const error = $('#videoError');
+    if (!input || !note) return;
+    const raw = input.value.trim();
+    if (error) error.hidden = true;
+    if (!raw) {
+      note.hidden = true;
+      note.classList.remove('is-bad');
+      return;
+    }
+    const info = parseVideoUrl(raw);
+    note.hidden = false;
+    note.classList.toggle('is-bad', !info);
+    note.textContent = info ? describeVideo(info) : 'Todavía no se reconoce un vídeo en esta dirección.';
+  }
+
+  function submitVideo(event) {
+    event.preventDefault();
+    const info = parseVideoUrl($('#videoUrl').value);
+    const error = $('#videoError');
+    if (!info) {
+      if (error) error.hidden = false;
+      $('#videoUrl').focus();
+      return;
+    }
+    if (state.wysiwyg) {
+      state.wysiwyg.restoreSelection();
+      state.wysiwyg.insertHtml(buildVideoHtml(info, $('#videoCaption').value.trim()));
+    }
+    $('#videoDialog').close();
+    App.toast('Vídeo insertado.', 'success');
+  }
+
+  /* ---------- Impresión ---------- */
+
+  const PRINT_CSS = [
+    '<style>',
+    '  @page { margin: 18mm 16mm; }',
+    '  body { max-width: none; padding: 0; }',
+    '  a { color: inherit; text-decoration: underline; }',
+    '  .video-embed { break-inside: avoid; }',
+    '  .video-frame { position: relative; height: 0; padding-bottom: 56.25%; overflow: hidden; }',
+    '  .video-frame iframe, .video-frame video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }',
+    '  .video-embed--file video { max-width: 100%; height: auto; }',
+    '</style>',
+  ].join('\n');
+
+  function printDocument() {
+    if (state.lastEdited === 'visual') flushVisualToSource();
+    const html = getWorkingHtml();
+    if (!html.trim()) {
+      App.toast('El documento está vacío. Escribe algo antes de imprimir.', 'warn');
+      return;
+    }
+    const body = App.extractBody(html).html;
+    const title = state.docTitle || 'Documento';
+    const documentHtml = App.wrapDocument(body, title).replace('</head>', PRINT_CSS + '\n</head>');
+    const previous = $('#printFrame');
+    if (previous) previous.remove();
+    const frame = document.createElement('iframe');
+    frame.id = 'printFrame';
+    frame.title = 'Documento listo para imprimir';
+    frame.setAttribute('aria-hidden', 'true');
+    // Sin allow-scripts: un <script> del documento no se ejecuta al imprimir.
+    frame.setAttribute('sandbox', 'allow-same-origin allow-modals');
+    // Fuera de la vista pero con tamaño real: algunas versiones de Chrome
+    // imprimen en blanco los iframes de 0 × 0.
+    frame.style.cssText = 'position:fixed;left:-12000px;top:0;width:1024px;height:768px;border:0;';
+    frame.srcdoc = documentHtml;
+    frame.addEventListener('load', function () {
+      setTimeout(function () {
+        try {
+          const win = frame.contentWindow;
+          if (!win) throw new Error('sin ventana');
+          win.focus();
+          win.print();
+        } catch (error) {
+          App.toast('El navegador no ha permitido abrir el diálogo de impresión. Descarga el HTML y ábrelo para imprimir.', 'error', 6500);
+          frame.remove();
+          return;
+        }
+        setTimeout(function () { if (frame.parentNode) frame.remove(); }, 60000);
+      }, 180);
+    });
+    document.body.appendChild(frame);
+    App.toast('Preparando la vista de impresión…', 'info', 2200);
+  }
+
   /* ---------- Diálogos ---------- */
 
   function getSelectedText() {
@@ -1496,6 +1987,10 @@
         if (state.wysiwyg) state.wysiwyg.insertHtml('<hr><p><br></p>');
       });
     }
+    const video = $('#videoBtn');
+    if (video) video.addEventListener('click', openVideoDialog);
+    const print = $('#printBtn');
+    if (print) print.addEventListener('click', printDocument);
     const clear = $('#clearFormatBtn');
     if (clear) {
       clear.addEventListener('click', function () {
@@ -1553,7 +2048,7 @@
   }
 
   function bindDialogs() {
-    ['#linkDialog', '#imageDialog', '#tableDialog', '#helpDialog', '#confirmDialog'].forEach(function (selector) {
+    ['#linkDialog', '#imageDialog', '#tableDialog', '#charDialog', '#videoDialog', '#helpDialog', '#confirmDialog'].forEach(function (selector) {
       App.wireDialogClose($(selector));
     });
 
@@ -1627,6 +2122,11 @@
 
     const tableForm = $('#tableForm');
     if (tableForm) tableForm.addEventListener('submit', submitTable);
+
+    const videoForm = $('#videoForm');
+    if (videoForm) videoForm.addEventListener('submit', submitVideo);
+    const videoUrl = $('#videoUrl');
+    if (videoUrl) videoUrl.addEventListener('input', updateVideoNote);
   }
 
   function bindDock() {
@@ -1794,6 +2294,9 @@
       } else if (key === 'k' && !event.altKey) {
         event.preventDefault();
         openLinkDialog();
+      } else if (key === 'p' && !event.shiftKey) {
+        event.preventDefault();
+        printDocument();
       }
     });
 
@@ -1803,6 +2306,7 @@
       if (!event.target.closest('#colorPop') && !event.target.closest('#textColorBtn') && !event.target.closest('#highlightBtn')) {
         closeColorPop();
       }
+      if (!event.target.closest('#emojiPop') && !event.target.closest('#emojiBtn')) closeEmojiPop();
     });
   }
 
@@ -1843,6 +2347,7 @@
       resizeTimer = setTimeout(function () {
         if (state.cm) state.cm.refresh();
         closeColorPop();
+        closeEmojiPop();
         closeAllSelectMenus();
       }, 180);
     });
@@ -1868,13 +2373,58 @@
 
   /* ---------- Arranque ---------- */
 
-  const syncVisualDebounced = App.debounce(function (html) {
-    if (!state.cm || !state.wysiwyg || !state.wysiwyg.isReady) return;
-    if (state.cm.getValue() === html) return;
-    setSource(html, { fromVisual: true });
-  }, 320);
+  /* ---------- Sincronización en vivo visual → código ---------- */
 
-  const autoFormatDebounced = App.debounce(autoFormatSource, 1200);
+  const LIVE_SYNC_MIN_MS = 60;
+  const LIVE_FORMAT_MAX = 120000;
+  let visualSyncTimer = null;
+  let visualSyncLast = 0;
+  let visualSyncHtml = '';
+
+  function cancelVisualSync() {
+    if (visualSyncTimer) {
+      clearTimeout(visualSyncTimer);
+      visualSyncTimer = null;
+    }
+  }
+
+  function liveFormat(html) {
+    if (html.length > LIVE_FORMAT_MAX) return html;
+    return formatHtml(html);
+  }
+
+  function writeVisualToSource(html) {
+    visualSyncTimer = null;
+    if (!state.cm || !state.wysiwyg || !state.wysiwyg.isReady) return;
+    const value = liveFormat(html);
+    visualSyncLast = Date.now();
+    if (state.cm.getValue() === value) return;
+    if (state.compressed) state.compressed = false;
+    setSource(value, { fromVisual: true });
+  }
+
+  /**
+   * Vuelca el HTML del panel visual al código como máximo cada 60 ms.
+   * El temporizador no se reprograma: así el panel de código se actualiza
+   * mientras se escribe (no solo al hacer una pausa) y el formateo viaja
+   * en el mismo volcado, sin un segundo paso tardío.
+   */
+  function visualSyncDelay(length) {
+    if (length > 600000) return 500;
+    if (length > 300000) return 220;
+    if (length > LIVE_FORMAT_MAX) return 120;
+    return LIVE_SYNC_MIN_MS;
+  }
+
+  function scheduleVisualSync(html) {
+    visualSyncHtml = html;
+    if (visualSyncTimer) return;
+    const minMs = visualSyncDelay(html.length);
+    const wait = Math.max(0, minMs - (Date.now() - visualSyncLast));
+    visualSyncTimer = setTimeout(function () {
+      writeVisualToSource(visualSyncHtml);
+    }, wait);
+  }
 
   const syncSourceDebounced = App.debounce(function () {
     if (!state.wysiwyg || !state.wysiwyg.isReady) return;
@@ -1922,6 +2472,7 @@
     bindDock();
     bindDialogs();
     bindColors();
+    bindGlyphPalettes();
     bindSplitter();
     bindDropzone();
     bindShortcuts();

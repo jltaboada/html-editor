@@ -1,9 +1,10 @@
 # Editor HTML · WYSIWYG + código en vivo
 
 Editor HTML que funciona **100% en el navegador**, sin servidor ni instalación: un panel visual
-(WYSIWYG) y un panel de código sincronizados, limpiador de HTML, buscar y reemplazar con
-expresiones regulares, importación de `.html` / `.docx` / `.txt` y exportación a HTML, ZIP con
-imágenes o Word.
+(WYSIWYG) y un panel de código sincronizados en tiempo real, limpiador de HTML, buscar y
+reemplazar con expresiones regulares, emoticonos, caracteres especiales, vídeos incrustados,
+impresión limpia del documento, importación de `.html` / `.docx` / `.txt` y exportación a HTML,
+ZIP con imágenes o Word.
 
 Es una reimplementación original inspirada en las herramientas del editor online de
 [HTML-Online](https://html-online.com/html-editor/). No contiene código, textos ni recursos
@@ -37,6 +38,15 @@ python -m http.server 8080
   de resaltado, alineación, listas, sangría, enlaces, imágenes, tablas, líneas horizontales y
   limpiar formato. Los desplegables de formato, tipografía y tamaño muestran una vista previa real
   de cada opción, y el color se puede elegir en la paleta o escribiendo un código hexadecimal.
+- **Emoticonos**: un selector con los más usados y las nueve categorías completas (1.898
+  emoticonos), con búsqueda por nombre en español. Se puede insertar varios seguidos sin cerrarlo.
+- **Caracteres especiales**: comillas tipográficas, guiones, monedas, matemáticas, flechas,
+  letras acentuadas, alfabeto griego y formas, también con buscador.
+- **Vídeo incrustado**: pega un enlace de YouTube (incluido `youtu.be`, Shorts y el minuto de
+  inicio), Vimeo o Dailymotion, o la URL de un archivo `.mp4`, `.webm` u `.ogv`. El vídeo se
+  inserta en un marco adaptativo 16:9 con pie de foto opcional.
+- **Imprimir**: el botón de impresión y `Ctrl`+`P` imprimen solo el documento, con una hoja de
+  estilos propia, sin la interfaz del editor.
 - **Limpieza** con 11 reglas (estilos inline, clases e IDs, etiquetas vacías, etiquetas con un
   espacio, espacios repetidos, comentarios, atributos, a texto plano, Smart `&nbsp;`, caracteres
   «IA» y scripts/estilos). El botón **Limpieza** aplica todas las reglas marcadas; cada regla
@@ -47,9 +57,10 @@ python -m http.server 8080
   Los DOCX se convierten con Mammoth y sus imágenes se incrustan como `data:` URIs.
 - **Exportar**: HTML listo para publicar, ZIP con carpeta `images/` cuando el documento lleva
   imágenes incrustadas, o DOCX para Word.
-- **Código siempre ordenado**: el HTML se indenta y ordena solo mientras escribes en el panel
-  visual y al pegar en el panel de código, sin pulsar *Indentar*. El botón sigue disponible y
-  *Comprimir* se respeta hasta que vuelvas a editar.
+- **Código en vivo y siempre ordenado**: mientras escribes en el panel visual, el código se
+  actualiza cada pocos milisegundos y llega ya indentado, sin esperas ni reindentados posteriores.
+  Al pegar en el panel de código también se ordena solo; *Indentar* sigue disponible y *Comprimir*
+  se respeta hasta que vuelvas a editar.
 - **Memoria de trabajo**: el borrador se guarda solo (también al cerrar o recargar el navegador) y,
   al volver, se restauran el texto, la vista, la división de paneles, el desplazamiento sincronizado,
   los colores y las reglas de limpieza marcadas.
@@ -69,6 +80,7 @@ python -m http.server 8080
 | `Ctrl` + `Shift` + `K` | Ejecutar limpieza |
 | `Ctrl` + `Shift` + `F` | Indentar el código |
 | `Ctrl` + `Alt` + `D` | Descargar HTML |
+| `Ctrl` + `P` | Imprimir solo el documento |
 | `F1` | Abrir la ayuda |
 | `Esc` | Cerrar paleta/menú o salir del modo enfoque |
 
@@ -83,6 +95,7 @@ assets/css/theme-beaypepe.css  Paleta, tipografía y acabados BeayPePeTools
 assets/fonts/              Varela Round (woff2) y licencia SIL OFL
 assets/img/                Logotipo de BeayPePeTools (no se usa en la interfaz)
 assets/js/utils.js         Utilidades (DOM, avisos, descargas, confirmaciones…)
+assets/js/emojis.js        Datos de emoticonos y caracteres especiales (nombres en español)
 assets/js/demo.js          Texto de relleno (Lorem ipsum)
 assets/js/cleaner.js       Reglas de limpieza, indentado, compresión y entidades
 assets/js/wysiwyg.js       Editor visual sobre un iframe aislado
@@ -101,6 +114,11 @@ vendor/                    Librerías de terceros (ver vendor/LICENSES.md)
 - La exportación a Word conserva texto y formato básico, pero las imágenes incrustadas pueden no
   viajar en el `.docx`; para documentos con imágenes usa la exportación ZIP.
 - El borrador local se guarda si el código no supera los 4 MB.
+- Los nombres de los emoticonos se generan a partir de [EmojiBase](https://emojibase.dev/)
+  (MIT); el resultado se guarda como datos estáticos en `assets/js/emojis.js`, sin dependencias
+  en tiempo de ejecución.
+- La hoja de impresión se carga en un iframe con `sandbox` sin `allow-scripts`: aunque el
+  documento contenga `<script>`, no se ejecuta al imprimir.
 
 ## Dependencias
 

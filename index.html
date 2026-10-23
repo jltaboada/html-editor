@@ -75,6 +75,10 @@
     <symbol id="i-pilcrow" viewBox="0 0 24 24"><path d="M13 4v16M17 4v16M8 4h9M8 4a4 4 0 0 0 0 8h5"/></symbol>
     <symbol id="i-arrow-down-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M8 13l4 4 4-4"/></symbol>
     <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 12h8M8 16h8"/></symbol>
+    <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><circle cx="9" cy="9.5" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r=".9" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-omega" viewBox="0 0 24 24"><path d="M8 20h8"/><path d="M8 20a6.5 6.5 0 1 1 8 0"/><path d="M12 4v3"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9 5 3-5 3z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 17v4h12v-4"/><circle cx="18" cy="12.5" r=".8" fill="currentColor" stroke="none"/></symbol>
   </svg>
 
   <header class="topbar">
@@ -217,10 +221,14 @@
             <button type="button" class="tbtn" id="imageBtn" title="Insertar imagen" aria-label="Insertar imagen"><svg class="icon"><use href="#i-image"/></svg></button>
             <button type="button" class="tbtn" id="tableBtn" title="Insertar tabla" aria-label="Insertar tabla"><svg class="icon"><use href="#i-table"/></svg></button>
             <button type="button" class="tbtn" id="hrBtn" title="Línea horizontal" aria-label="Línea horizontal"><svg class="icon"><use href="#i-hr"/></svg></button>
+            <button type="button" class="tbtn" id="videoBtn" title="Insertar vídeo de YouTube, Vimeo o un archivo" aria-label="Insertar vídeo" aria-haspopup="dialog"><svg class="icon"><use href="#i-video"/></svg></button>
+            <button type="button" class="tbtn" id="emojiBtn" title="Insertar un emoticono" aria-label="Insertar emoticono" aria-haspopup="true" aria-expanded="false"><svg class="icon"><use href="#i-smile"/></svg></button>
+            <button type="button" class="tbtn" id="charBtn" title="Insertar caracteres especiales" aria-label="Insertar caracteres especiales" aria-haspopup="dialog"><svg class="icon"><use href="#i-omega"/></svg></button>
           </div>
 
           <div class="tb-group">
             <button type="button" class="tbtn" id="clearFormatBtn" title="Quitar todo el formato" aria-label="Quitar formato"><svg class="icon"><use href="#i-eraser"/></svg></button>
+            <button type="button" class="tbtn" id="printBtn" title="Imprimir el documento (Ctrl+P)" aria-label="Imprimir documento"><svg class="icon"><use href="#i-printer"/></svg></button>
             <button type="button" class="tbtn" id="fullscreenBtn" title="Pantalla completa" aria-label="Pantalla completa" aria-pressed="false"><svg class="icon"><use href="#i-layout"/></svg></button>
           </div>
         </div>
@@ -363,6 +371,24 @@
     </div>
   </div>
 
+  <div class="glyph-pop" id="emojiPop" hidden role="dialog" aria-label="Selector de emoticonos">
+    <div class="glyph-pop-head">
+      <span class="glyph-pop-title">Emoticonos</span>
+      <button type="button" class="iconbtn iconbtn--xs" id="emojiPopClose" aria-label="Cerrar el selector de emoticonos"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="glyph-search">
+      <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+      <input type="search" id="emojiSearch" placeholder="Buscar: perro, corazón, bandera…" autocomplete="off" spellcheck="false" aria-label="Buscar emoticonos por nombre">
+    </div>
+    <div class="glyph-tabs" id="emojiTabs" role="tablist" aria-label="Categorías de emoticonos"></div>
+    <div class="glyph-grid glyph-grid--emoji" id="emojiGrid" role="listbox" aria-label="Emoticonos"></div>
+    <p class="glyph-empty" id="emojiEmpty" hidden>No hay emoticonos que coincidan con la búsqueda.</p>
+    <div class="glyph-pop-foot">
+      <span id="emojiCount">0 emoticonos</span>
+      <span class="glyph-pop-hint" id="emojiHint">Busca entre 1.898 emoticonos</span>
+    </div>
+  </div>
+
   <dialog class="dialog" id="linkDialog" aria-labelledby="linkDialogTitle">
     <form id="linkForm" novalidate>
       <header class="dialog-head">
@@ -464,6 +490,54 @@
     </form>
   </dialog>
 
+  <dialog class="dialog dialog--wide" id="charDialog" aria-labelledby="charDialogTitle">
+    <header class="dialog-head">
+      <h2 id="charDialogTitle">Caracteres especiales</h2>
+      <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </header>
+    <div class="dialog-body">
+      <div class="glyph-search glyph-search--dialog">
+        <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+        <input type="search" id="charSearch" placeholder="Buscar: euro, flecha, griega…" autocomplete="off" spellcheck="false" aria-label="Buscar caracteres por nombre">
+      </div>
+      <div class="glyph-tabs" id="charTabs" role="tablist" aria-label="Categorías de caracteres"></div>
+      <div class="glyph-grid glyph-grid--char" id="charGrid" role="listbox" aria-label="Caracteres especiales"></div>
+      <p class="glyph-empty" id="charEmpty" hidden>No hay caracteres que coincidan con la búsqueda.</p>
+      <p class="dialog-hint">Haz clic en un carácter para insertarlo donde está el cursor. Puedes insertar varios seguidos.</p>
+    </div>
+    <footer class="dialog-foot">
+      <span class="spacer"></span>
+      <button type="button" class="btn btn--ghost" data-close-dialog>Cerrar</button>
+    </footer>
+  </dialog>
+
+  <dialog class="dialog" id="videoDialog" aria-labelledby="videoDialogTitle">
+    <form id="videoForm" novalidate>
+      <header class="dialog-head">
+        <h2 id="videoDialogTitle">Insertar vídeo</h2>
+        <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <label class="field">
+          <span>Dirección del vídeo</span>
+          <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" spellcheck="false" required>
+        </label>
+        <p class="field-hint">Admite YouTube, Vimeo, Dailymotion y archivos .mp4, .webm, .ogv o .mov.</p>
+        <p class="video-note" id="videoNote" hidden></p>
+        <label class="field">
+          <span>Pie de vídeo <em>(opcional)</em></span>
+          <input type="text" id="videoCaption" placeholder="Ej.: Presentación del proyecto" autocomplete="off" maxlength="240">
+        </label>
+        <p class="field-error" id="videoError" hidden>No se reconoce un vídeo en esa dirección. Revisa el enlace.</p>
+      </div>
+      <footer class="dialog-foot">
+        <span class="spacer"></span>
+        <button type="button" class="btn btn--ghost" data-close-dialog>Cancelar</button>
+        <button type="submit" class="btn btn--primary">Insertar vídeo</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog class="dialog" id="helpDialog" aria-labelledby="helpTitle">
     <header class="dialog-head">
       <h2 id="helpTitle">Atajos y ayuda</h2>
@@ -479,12 +553,18 @@
           <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd></dt><dd>Ejecutar limpieza</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></dt><dd>Indentar el código</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></dt><dd>Descargar HTML</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>P</kbd></dt><dd>Imprimir solo el documento</dd></div>
           <div><dt><kbd>F1</kbd></dt><dd>Abrir esta ayuda</dd></div>
         </dl>
       </section>
       <section>
         <h3><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg> Privacidad</h3>
         <p>El documento no se envía a ningún servidor. El borrador y las preferencias se guardan en <code>localStorage</code> de tu navegador. Al descargar un HTML con imágenes incrustadas, se empaqueta un ZIP con la carpeta <code>images/</code>.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-smile"/></svg> Emoticonos, símbolos y vídeo</h3>
+        <p>El botón del emoticono abre un selector con los más usados y todas las categorías; escribe en el buscador para encontrar cualquiera por su nombre en español. El botón <strong>Ω</strong> inserta caracteres especiales (comillas tipográficas, monedas, matemáticas, flechas, letras acentuadas…). El botón de vídeo admite enlaces de YouTube, Vimeo, Dailymotion y archivos <code>.mp4</code>, <code>.webm</code> u <code>.ogv</code>.</p>
+        <p>El botón de impresión y <kbd>Ctrl</kbd>+<kbd>P</kbd> imprimen el documento limpio, sin la interfaz del editor.</p>
       </section>
       <section>
         <h3><svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Limpieza</h3>
@@ -534,6 +614,7 @@
   <script src="vendor/mammoth.browser.min.js"></script>
   <script src="vendor/html-docx.js"></script>
   <script src="assets/js/utils.js"></script>
+  <script src="assets/js/emojis.js"></script>
   <script src="assets/js/demo.js"></script>
   <script src="assets/js/cleaner.js"></script>
   <script src="assets/js/wysiwyg.js"></script>

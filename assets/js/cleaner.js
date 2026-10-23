@@ -639,6 +639,13 @@
       '    pre { overflow: auto; padding: 12px; border: 1px solid #dddddd; border-radius: 5px; background: #f5f5f5; }',
       '    code { font-family: "Courier New", Courier, monospace; }',
       '    hr { border: 0; border-top: 1px solid #dddddd; margin: 2em 0; }',
+      '    iframe { max-width: 100%; border: 0; }',
+      '    .video-embed { margin: 1.2em 0; }',
+      '    .video-frame { position: relative; height: 0; padding-bottom: 56.25%; overflow: hidden; border-radius: 8px; background: #0f172a; }',
+      '    .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }',
+      '    .video-embed figcaption { margin-top: 6px; color: #6b7280; font-size: .875em; }',
+      '    .video-embed--file video { display: block; max-width: 100%; height: auto; border-radius: 8px; }',
+      '    @media print { body { padding: 0; } .video-embed { break-inside: avoid; } }',
     ].join('\n');
     return [
       '<!doctype html>',
