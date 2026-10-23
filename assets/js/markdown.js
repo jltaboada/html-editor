@@ -48,10 +48,11 @@
    * Markdown → HTML del documento.
    */
   function toHtml(markdown) {
-    const source = String(markdown == null ? '' : markdown);
+    let source = String(markdown == null ? '' : markdown);
     if (!source.trim()) return '';
     if (!hasLibraries()) return '';
     prepareMarked();
+    if (App.Math && App.Math.available) source = App.Math.expand(source);
     let html = '';
     try {
       html = global.marked.parse(source);
@@ -125,6 +126,21 @@
         },
       });
     }
+
+    // Va la última para tener prioridad sobre las reglas anteriores: las
+    // ecuaciones viajan siempre como $...$ / $$...$$, en los dos modos.
+    service.addRule('mathEquation', {
+      filter: function (node) {
+        return !!(App.Math && App.Math.isMathNode(node));
+      },
+      replacement: function (content, node) {
+        const tex = App.Math.texOf(node);
+        if (!tex) return content;
+        return App.Math.isBlockNode(node)
+          ? '\n\n$$\n' + tex + '\n$$\n\n'
+          : '$' + tex + '$';
+      },
+    });
 
     return service;
   }

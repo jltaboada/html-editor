@@ -18,7 +18,7 @@
       }
     } catch (error) { /* localStorage bloqueado */ }
   </script>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23141414'/%3E%3Cpath d='M13 10l-5 6 5 6M19 10l5 6-5 6' fill='none' stroke='%239c3b2d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%239c3b2d'/%3E%3Cpath d='M7.5 10.5 11.5 21.5 16 14 20.5 21.5 24.5 10.5' fill='none' stroke='%23fff' stroke-width='2.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css">
   <link rel="stylesheet" href="assets/css/app.css">
   <link rel="stylesheet" href="assets/css/theme-jltaboada.css">
@@ -91,12 +91,17 @@
     <symbol id="i-spellcheck" viewBox="0 0 24 24"><path d="M2.5 17 6.6 6h1.6L12.3 17M4 13.4h6.8"/><path d="m14.5 13.5 2.3 2.3L21 10"/></symbol>
     <symbol id="i-video" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9 5 3-5 3z" fill="currentColor" stroke="none"/></symbol>
     <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 17v4h12v-4"/><circle cx="18" cy="12.5" r=".8" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-logo" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="var(--brand-mark, #9c3b2d)"/><path d="M7.5 10.5 11.5 21.5 16 14 20.5 21.5 24.5 10.5" fill="none" stroke="#fff" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-preview" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="14" rx="2.5"/><path d="M8 21h8M12 18v3"/><path d="m10 8.5 4 2.5-4 2.5z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 3h7v7M21 3l-9 9"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v6h-6"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
   </svg>
 
   <header class="topbar">
     <div class="brand">
+      <svg class="brand-logo" aria-hidden="true"><use href="#i-logo"/></svg>
       <span class="brand-name">Editor <strong>WYSIWYG</strong></span>
     </div>
 
@@ -143,6 +148,9 @@
           </button>
         </div>
       </div>
+      <button type="button" class="btn btn--ghost btn--preview" id="previewBtn" title="Ver el documento como una página web (Ctrl+Mayús+P)">
+        <svg class="icon" aria-hidden="true"><use href="#i-preview"/></svg><span class="btn-label">Vista previa</span>
+      </button>
       <button type="button" class="iconbtn" id="themeBtn" title="Cambiar al modo oscuro" aria-label="Cambiar al modo oscuro" aria-pressed="false">
         <svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg>
       </button>
@@ -159,6 +167,8 @@
           <div class="tb-group">
             <button type="button" class="tbtn" data-cmd="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg class="icon"><use href="#i-undo"/></svg></button>
             <button type="button" class="tbtn" data-cmd="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer"><svg class="icon"><use href="#i-redo"/></svg></button>
+            <span class="tb-sep" aria-hidden="true"></span>
+            <button type="button" class="tbtn" id="visualNewBtn" title="Nueva página en blanco" aria-label="Nueva página en blanco"><svg class="icon"><use href="#i-file-plus"/></svg></button>
           </div>
 
           <div class="tb-group">
@@ -243,6 +253,7 @@
             <button type="button" class="tbtn" id="videoBtn" title="Insertar vídeo de YouTube, Vimeo o un archivo" aria-label="Insertar vídeo" aria-haspopup="dialog"><svg class="icon"><use href="#i-video"/></svg></button>
             <button type="button" class="tbtn" id="emojiBtn" title="Insertar un emoticono" aria-label="Insertar emoticono" aria-haspopup="true" aria-expanded="false"><svg class="icon"><use href="#i-smile"/></svg></button>
             <button type="button" class="tbtn" id="charBtn" title="Insertar caracteres especiales" aria-label="Insertar caracteres especiales" aria-haspopup="dialog"><span class="tbtn-glyph" aria-hidden="true">Ω</span></button>
+            <button type="button" class="tbtn" id="mathBtn" title="Insertar una ecuación matemática (LaTeX)" aria-label="Insertar ecuación" aria-haspopup="dialog"><span class="tbtn-glyph tbtn-glyph--math" aria-hidden="true">∑</span></button>
           </div>
 
           <div class="tb-group">
@@ -373,7 +384,7 @@
       <span class="status-item" id="saveStatus"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-cloud-check"/></svg> <span id="saveStatusText">Guardado local</span></span>
       <span class="status-item status-item--muted" id="docSize">0 KB</span>
     </div>
-    <div class="status-credit"><a href="https://jltaboada.com" target="_blank" rel="noopener">© jltaboada</a></div>
+    <div class="status-credit">© 2026 - <a href="https://jltaboada.com" target="_blank" rel="noopener">jltaboada</a></div>
     <div class="status-right" aria-hidden="true"></div>
   </footer>
 
@@ -691,7 +702,60 @@
     </form>
   </dialog>
 
-  <dialog class="dialog" id="helpDialog" aria-labelledby="helpTitle">
+  <dialog class="dialog" id="mathDialog" aria-labelledby="mathDialogTitle">
+    <form id="mathForm">
+      <header class="dialog-head">
+        <h2 id="mathDialogTitle">Insertar ecuación</h2>
+        <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <label class="field">
+          <span>Fórmula (LaTeX)</span>
+          <textarea id="mathTex" rows="3" spellcheck="false" autocomplete="off" placeholder="E = mc^2"></textarea>
+        </label>
+        <div class="math-preview" id="mathPreview" aria-live="polite"></div>
+        <p class="field-error" id="mathError" hidden>La fórmula no es válida. Revisa las llaves y los comandos.</p>
+        <div class="field-row">
+          <label class="check"><input type="radio" name="mathDisplay" value="inline" checked> En línea, dentro del texto</label>
+          <label class="check"><input type="radio" name="mathDisplay" value="block"> En bloque, centrada</label>
+        </div>
+        <p class="dialog-hint">Se guarda como MathML, así que se ve igual en la web sin cargar ninguna librería. En Markdown también puedes escribir <code>$...$</code> o <code>$$...$$</code> y se convierte al abrir el documento.</p>
+      </div>
+      <footer class="dialog-foot">
+        <button type="button" class="btn btn--danger-ghost" id="mathRemove" hidden>Quitar ecuación</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn--ghost" data-close-dialog>Cancelar</button>
+        <button type="submit" class="btn btn--primary" id="mathSubmit">Insertar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog class="dialog dialog--preview" id="previewDialog" aria-labelledby="previewTitle">
+    <header class="dialog-head">
+      <h2 id="previewTitle">Vista previa</h2>
+      <div class="preview-actions">
+        <div class="preview-devices" role="group" aria-label="Ancho de la vista previa">
+          <button type="button" class="preview-device is-active" data-device="desktop" aria-pressed="true" title="Ancho de escritorio">
+            <svg class="icon" aria-hidden="true"><use href="#i-columns"/></svg><span>Escritorio</span>
+          </button>
+          <button type="button" class="preview-device" data-device="mobile" aria-pressed="false" title="Ancho de móvil (390 px)">
+            <svg class="icon" aria-hidden="true"><use href="#i-doc"/></svg><span>Móvil</span>
+          </button>
+        </div>
+        <button type="button" class="iconbtn" id="previewRefresh" title="Actualizar la vista previa" aria-label="Actualizar la vista previa"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+        <button type="button" class="iconbtn" id="previewOpen" title="Abrir en una pestaña nueva (con scripts)" aria-label="Abrir en una pestaña nueva"><svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></button>
+        <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar la vista previa"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
+    </header>
+    <div class="dialog-body preview-body">
+      <div class="preview-stage" id="previewStage">
+        <iframe id="previewFrame" class="preview-frame" title="Vista previa del documento" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals"></iframe>
+      </div>
+      <p class="preview-hint">Así quedará el HTML exportado. Los enlaces se abren en una pestaña nueva y los formularios y el CSS funcionan; los scripts no se ejecutan aquí (usa <strong>Abrir en una pestaña nueva</strong> si los necesitas).</p>
+    </div>
+  </dialog>
+
+  <dialog class="dialog dialog--help" id="helpDialog" aria-labelledby="helpTitle">
     <header class="dialog-head">
       <h2 id="helpTitle">Atajos y ayuda</h2>
       <button type="button" class="iconbtn" data-close-dialog aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
@@ -707,6 +771,7 @@
           <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></dt><dd>Indentar el código</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></dt><dd>Descargar HTML</dd></div>
           <div><dt><kbd>Ctrl</kbd>+<kbd>P</kbd></dt><dd>Imprimir solo el documento</dd></div>
+          <div><dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd></dt><dd>Abrir la vista previa</dd></div>
           <div><dt><kbd>F1</kbd></dt><dd>Abrir esta ayuda</dd></div>
         </dl>
       </section>
@@ -721,9 +786,24 @@
         <p>Haz clic en el nombre que aparece encima del código para renombrar el archivo (sin la extensión): se guarda y se descarga con ese nombre.</p>
       </section>
       <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-preview"/></svg> Vista previa</h3>
+        <p>El botón <strong>Vista previa</strong> abre el documento tal y como queda al exportarlo: los enlaces funcionan (se abren en una pestaña nueva), el CSS, las tablas, los formularios y los vídeos se comportan como en una web. Puedes alternar entre el ancho de escritorio y el de móvil, y abrir el documento en una pestaña nueva si necesitas ejecutar sus scripts, que aquí no se ejecutan por seguridad.</p>
+        <p>El documento se refresca solo mientras escribes; el botón de recarga lo actualiza en el acto.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-code"/></svg> Ecuaciones</h3>
+        <p>El botón <strong>∑</strong> inserta una ecuación escrita en LaTeX (<code>E = mc^2</code>, <code>\frac{a}{b}</code>, <code>\sqrt{x}</code>…). La fórmula se guarda como MathML, así que se ve en cualquier navegador moderno sin cargar fuentes ni hojas de estilo externas. Haz doble clic sobre una ecuación para editarla o quitarla.</p>
+        <p>En Markdown también puedes escribir <code>$...$</code> para una fórmula en línea y <code>$$...$$</code> para una centrada; al pasar a HTML se convierten en MathML y al volver a Markdown recuperan su LaTeX.</p>
+      </section>
+      <section>
         <h3><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg> HTML y Markdown</h3>
         <p>El conmutador <strong>HTML | MD</strong> del panel de código cambia entre los dos lenguajes. En modo MD escribes Markdown y el panel visual se actualiza al momento; lo que edites en el visual aparece también como Markdown. Cada modo conserva su propio historial y su posición.</p>
         <p>El botón <strong>HTML incrustado</strong> (solo en modo MD) decide qué pasa con lo que Markdown no sabe representar. Activado, esos fragmentos (colores, tipografías, vídeos, fórmulas…) viajan como HTML dentro del Markdown y no se pierden al volver a HTML. Desactivado, el Markdown queda limpio y solo con sintaxis estándar. Puedes descargar el documento como <code>.md</code> desde el menú <strong>Descargar</strong>.</p>
+      </section>
+      <section>
+        <h3><svg class="icon" aria-hidden="true"><use href="#i-columns"/></svg> Vistas y paneles</h3>
+        <p><strong>Dividido</strong> muestra el editor visual y el de código. Si ya estás en esa vista, vuelve a pulsarlo para <strong>intercambiar los paneles</strong>: el código pasa a la izquierda y el visual a la derecha. El orden se recuerda entre sesiones.</p>
+        <p>El botón de la luna cambia entre el modo claro y el oscuro. El icono del folio con el signo + abre una página en blanco, igual que en el panel de código. <strong>Pantalla completa</strong> deja solo el editor visual.</p>
       </section>
       <section>
         <h3><svg class="icon" aria-hidden="true"><use href="#i-wand"/></svg> Limpieza</h3>
@@ -773,6 +853,7 @@
   <script src="vendor/jszip.min.js"></script>
   <script src="vendor/mammoth.browser.min.js"></script>
   <script src="vendor/html-docx.js"></script>
+  <script src="vendor/katex.min.js"></script>
   <script src="vendor/marked.umd.min.js"></script>
   <script src="vendor/turndown.min.js"></script>
   <script src="vendor/turndown-plugin-gfm.min.js"></script>
@@ -783,6 +864,7 @@
   <script src="assets/js/wysiwyg.js"></script>
   <script src="assets/js/files.js"></script>
   <script src="assets/js/findreplace.js"></script>
+  <script src="assets/js/math.js"></script>
   <script src="assets/js/markdown.js"></script>
   <script src="assets/js/app.js"></script>
 </body>

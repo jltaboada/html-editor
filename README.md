@@ -2,9 +2,10 @@
 
 Editor WYSIWYG que funciona **100% en el navegador**, sin servidor ni instalación: un panel visual
 sincronizado en tiempo real con un panel de código que puede mostrarse en **HTML o Markdown**,
-limpiador de HTML, buscar y reemplazar con expresiones regulares, emoticonos, caracteres
-especiales, vídeos incrustados, impresión limpia del documento, importación de `.html` / `.md` /
-`.docx` / `.txt` y exportación a HTML, Markdown, ZIP con imágenes o Word.
+vista previa funcional del documento, ecuaciones en LaTeX (exportadas como MathML), limpiador de
+HTML, buscar y reemplazar con expresiones regulares, emoticonos, caracteres especiales, vídeos
+incrustados, impresión limpia del documento, importación de `.html` / `.md` / `.docx` / `.txt` y
+exportación a HTML, Markdown, ZIP con imágenes o Word.
 
 Es una reimplementación original inspirada en las herramientas del editor online de
 [HTML-Online](https://html-online.com/html-editor/). No contiene código, textos ni recursos
@@ -33,7 +34,16 @@ python -m http.server 8080
 ## Funciones
 
 - **Vistas**: Dividido, Visual y Código. El separador central se puede arrastrar (o mover con las
-  flechas del teclado) y la división se recuerda.
+  flechas del teclado) y la división se recuerda. En la vista dividida, volver a pulsar **Dividido**
+  intercambia los paneles (código a la izquierda, visual a la derecha) y el orden se recuerda.
+- **Vista previa**: botón **Vista previa** (o `Ctrl`+`Shift`+`P`) para ver el documento como la
+  página web exportada. Los enlaces se abren en una pestaña nueva, el CSS, las tablas, los vídeos y
+  los formularios funcionan, y puedes alternar entre el ancho de escritorio y el de móvil. Los
+  scripts no se ejecutan en la vista previa; el botón de abrir en una pestaña nueva sí los ejecuta.
+- **Ecuaciones**: el botón **∑** inserta fórmulas LaTeX con vista previa en el diálogo (en línea o
+  centradas). Se guardan como MathML, así que el HTML exportado se ve igual sin cargar ninguna
+  librería. Doble clic sobre una ecuación para editarla o quitarla. En Markdown se escriben como
+  `$...$` o `$$...$$` y se convierten en ambos sentidos.
 - **Barra de formato**: deshacer/rehacer, estilos de párrafo (H1–H6, cita, preformateado),
   tipografía, tamaño, negrita, cursiva, subrayado, tachado, superíndice/subíndice, color de texto y
   de resaltado, alineación, listas, sangría, enlaces, imágenes, tablas, líneas horizontales y
@@ -117,6 +127,7 @@ assets/css/app.css         Base de la interfaz
 assets/css/theme-jltaboada.css  Paleta clara/oscura, tipografía y acabados
 assets/fonts/              Varela Round (woff2) y licencia SIL OFL
 assets/js/utils.js         Utilidades (DOM, avisos, descargas, confirmaciones…)
+assets/js/math.js          Ecuaciones LaTeX → MathML (KaTeX)
 assets/js/emojis.js        Datos de emoticonos y caracteres especiales (nombres en español)
 assets/js/demo.js          Texto de relleno (Lorem ipsum)
 assets/js/cleaner.js       Reglas de limpieza, indentado, compresión y entidades
@@ -151,7 +162,8 @@ vendor/                    Librerías de terceros (ver vendor/LICENSES.md)
 ## Dependencias
 
 Todas las librerías están incluidas en `vendor/` y se usan con sus licencias originales:
-CodeMirror 5.65.16 (MIT, con los modos HTML y Markdown), marked 15.0.12 (MIT), Turndown 7.2.4
+CodeMirror 5.65.16 (MIT, con los modos HTML y Markdown), KaTeX 0.16.11 (MIT, salida MathML),
+marked 15.0.12 (MIT), Turndown 7.2.4
 (MIT), turndown-plugin-gfm 1.0.2 (MIT), JSZip 3.10.1 (MIT/GPLv3), Mammoth 1.8.0 (BSD-2-Clause),
 html-docx-js 0.3.1 (MIT) y js-beautify 1.15.1 (MIT). La interfaz usa la fuente
 [Varela Round](https://github.com/alefalefalef/Varela-Round-Hebrew) (SIL OFL 1.1), incluida en

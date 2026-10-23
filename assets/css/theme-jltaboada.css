@@ -65,6 +65,7 @@
   --font-mono: "Courier New", Courier, monospace;
   --topbar-h: 64px;
   --status-h: 34px;
+  --brand-mark: #9c3b2d;
   --header-bg: #141414;
   --header-bg-2: #0a0a0a;
   --header-text: #ffffff;
@@ -131,6 +132,7 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
   --shadow-md: 0 4px 18px -10px rgba(0, 0, 0, .7);
   --shadow-lg: 0 24px 60px -28px rgba(0, 0, 0, .85);
+  --brand-mark: #b5483a;
   --header-bg: #0a0a0a;
   --header-bg-2: #000000;
   --header-text: #ffffff;
@@ -225,13 +227,20 @@ input[type="checkbox"] { accent-color: var(--accent); }
   color: var(--header-text);
   box-shadow: 0 1px 0 rgba(0, 0, 0, .2);
 }
-.brand { gap: 10px; }
+.brand { gap: 11px; align-items: center; }
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .08);
+}
 .brand-name {
   color: var(--header-text);
-  font-size: 15px;
-  letter-spacing: .01em;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: -.005em;
 }
-.brand-name strong { color: #e3a396; font-weight: 800; }
+.brand-name strong { color: #e8b3a8; font-weight: 800; letter-spacing: .02em; }
 .topbar-center { min-width: 0; }
 .viewswitch {
   padding: 3px;
@@ -360,6 +369,14 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .pane-status-label { color: var(--text-2); }
 .pane-status-sep { background: var(--border); }
 
+/* ---------- Vista previa ---------- */
+.preview-stage { background: var(--surface-3); }
+.preview-hint { color: var(--muted); }
+.preview-device.is-active { color: var(--accent-strong); }
+
+/* ---------- Ecuaciones ---------- */
+.math-preview { border-color: var(--border-strong); background: var(--surface-2); }
+
 /* ---------- Editor de código ---------- */
 .cm-wrap .CodeMirror {
   font-size: 14px;
@@ -485,7 +502,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
 /* ---------- Responsive ---------- */
 @media (max-width: 1040px) {
   .topbar { gap: 9px; padding: 0 12px; }
-  .brand-name { font-size: 14px; }
+  .brand-name { font-size: 16.5px; }
+  .brand-logo { width: 29px; height: 29px; }
 }
 
 @media (max-width: 900px) {
@@ -508,6 +526,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 
 @media (max-width: 480px) {
-  .brand-name { font-size: 13px; }
+  .brand-name { font-size: 15.5px; }
+  .brand-logo { width: 27px; height: 27px; }
   .status-left .status-item--muted { display: none; }
 }

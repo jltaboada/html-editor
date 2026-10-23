@@ -47,6 +47,11 @@
     print: { size: 'a4', orientation: 'portrait', margins: 'normal' },
     spellcheck: true,
     theme: 'light',
+    swapped: false,
+    mathEditing: null,
+    previewDevice: 'desktop',
+    previewRatio: 0,
+    previewTimer: null,
     codeLang: 'html',
     mdKeepHtml: true,
     mdEditor: null,
@@ -435,6 +440,7 @@
       onDropFiles: handleDroppedFiles,
       onShortcut: onVisualShortcut,
       onEditImage: function (img) { openImageDialog(img); },
+      onEditMath: function (node) { openMathDialog(node); },
     });
 
     state.wysiwyg.ready.then(function () {
@@ -543,6 +549,7 @@
     updateSourceStatus();
     updateVisualStatus();
     updateDocTitle(html);
+    schedulePreviewRefresh();
   }
 
   function plural(count, singular, pluralForm) {
@@ -695,6 +702,7 @@
         colors: state.colors,
         spellcheck: state.spellcheck,
         theme: state.theme,
+        swapped: state.swapped,
         print: state.print,
         codeLang: state.codeLang,
         mdKeepHtml: state.mdKeepHtml,
@@ -734,6 +742,7 @@
         if (state.mdEditor) state.mdEditor.refresh();
       });
     }
+    updateSwapButton();
     if (!silent) saveSettingsDebounced();
   }
 
@@ -744,6 +753,34 @@
     const splitter = $('#splitter');
     if (splitter) splitter.setAttribute('aria-valuenow', String(Math.round(state.split)));
     saveSettingsDebounced();
+  }
+
+  /* ---------- Orden de los paneles ---------- */
+
+  function updateSwapButton() {
+    const btn = document.querySelector('.viewswitch-btn[data-view="split"]');
+    if (!btn) return;
+    const split = state.view === 'split';
+    const label = split ? 'Intercambiar los paneles' : 'Vista dividida';
+    btn.setAttribute('title', label);
+    btn.setAttribute('aria-label', label);
+  }
+
+  function applySwap() {
+    const workspace = $('#workspace');
+    if (workspace) workspace.classList.toggle('is-swapped', !!state.swapped);
+    updateSwapButton();
+  }
+
+  function toggleSwap() {
+    state.swapped = !state.swapped;
+    applySwap();
+    persistSettings();
+    App.toast(state.swapped ? 'Panel de código a la izquierda.' : 'Panel visual a la izquierda.', 'success', 2200);
+    requestAnimationFrame(function () {
+      if (state.cm) state.cm.refresh();
+      if (state.mdEditor) state.mdEditor.refresh();
+    });
   }
 
   /* ---------- Tema claro / oscuro ---------- */
@@ -2281,6 +2318,134 @@
     if (form) form.addEventListener('submit', insertDate);
   }
 
+  /* ---------- Ecuaciones matemáticas ---------- */
+
+  function mathAvailable() {
+    return !!(App.Math && App.Math.available);
+  }
+
+  function mathDisplaySelected() {
+    const checked = document.querySelector('input[name="mathDisplay"]:checked');
+    return !!checked && checked.value === 'block';
+  }
+
+  function updateMathPreview() {
+    const input = $('#mathTex');
+    const preview = $('#mathPreview');
+    if (!input || !preview) return false;
+    const tex = input.value.trim();
+    const error = $('#mathError');
+    const submit = $('#mathSubmit');
+    if (!tex) {
+      preview.innerHTML = '<span class="math-preview-empty">La vista previa aparecerá aquí.</span>';
+      preview.classList.remove('is-error');
+      if (error) error.hidden = true;
+      if (submit) submit.disabled = true;
+      return false;
+    }
+    const html = mathAvailable() ? App.Math.toHtml(tex, mathDisplaySelected()) : '';
+    preview.innerHTML = html || '<span class="math-preview-empty">Fórmula no válida.</span>';
+    preview.classList.toggle('is-error', !html);
+    if (error) error.hidden = !!html;
+    if (submit) submit.disabled = !html;
+    return !!html;
+  }
+
+  function openMathDialog(node) {
+    if (!state.wysiwyg) return;
+    if (!mathAvailable()) {
+      App.toast('Las ecuaciones no están disponibles: no se ha podido cargar KaTeX.', 'error', 6000);
+      return;
+    }
+    const dialog = $('#mathDialog');
+    if (!dialog) return;
+    const editing = node && App.Math.isMathNode(node) ? node : null;
+    if (!editing) state.wysiwyg.saveSelection();
+    state.mathEditing = editing;
+    const block = editing ? App.Math.isBlockNode(editing) : false;
+    $$('input[name="mathDisplay"]').forEach(function (input) {
+      input.checked = input.value === (block ? 'block' : 'inline');
+    });
+    $('#mathDialogTitle').textContent = editing ? 'Editar ecuación' : 'Insertar ecuación';
+    $('#mathSubmit').textContent = editing ? 'Guardar' : 'Insertar';
+    $('#mathRemove').hidden = !editing;
+    $('#mathTex').value = editing ? App.Math.texOf(editing) : '';
+    updateMathPreview();
+    dialog.showModal();
+    setTimeout(function () {
+      const tex = $('#mathTex');
+      if (tex) {
+        tex.focus({ preventScroll: true });
+        if (editing) tex.select();
+      }
+    }, 40);
+  }
+
+  function submitMath(event) {
+    if (event) event.preventDefault();
+    if (!state.wysiwyg || !mathAvailable()) return;
+    if (!updateMathPreview()) return;
+    const tex = $('#mathTex').value.trim();
+    const html = App.Math.toHtml(tex, mathDisplaySelected());
+    if (!html) return;
+    const editing = state.mathEditing;
+    pushHistory(editing ? 'Editar ecuación' : 'Insertar ecuación');
+    if (editing && state.wysiwyg.replaceElement) {
+      state.wysiwyg.replaceElement(editing, html);
+    } else if (state.wysiwyg.insertFragment) {
+      state.wysiwyg.restoreSelection();
+      state.wysiwyg.insertFragment(html);
+    } else {
+      state.wysiwyg.restoreSelection();
+      state.wysiwyg.insertHtml(html);
+    }
+    state.mathEditing = null;
+    const dialog = $('#mathDialog');
+    if (dialog) dialog.close();
+    App.toast(editing ? 'Ecuación actualizada.' : 'Ecuación insertada.', 'success', 2200);
+  }
+
+  function removeMath() {
+    const editing = state.mathEditing;
+    if (!editing || !state.wysiwyg || !state.wysiwyg.replaceElement) return;
+    pushHistory('Quitar ecuación');
+    state.wysiwyg.replaceElement(editing, '');
+    state.mathEditing = null;
+    const dialog = $('#mathDialog');
+    if (dialog) dialog.close();
+    App.toast('Ecuación eliminada.', 'success', 2200);
+  }
+
+  function bindMath() {
+    const button = $('#mathBtn');
+    if (button) {
+      button.addEventListener('click', function () { openMathDialog(null); });
+      if (!mathAvailable()) {
+        button.disabled = true;
+        button.title = 'Las ecuaciones no están disponibles en este navegador';
+      }
+    }
+    const tex = $('#mathTex');
+    if (tex) {
+      tex.addEventListener('input', updateMathPreview);
+      tex.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          submitMath();
+        }
+      });
+    }
+    $$('input[name="mathDisplay"]').forEach(function (input) {
+      input.addEventListener('change', updateMathPreview);
+    });
+    const form = $('#mathForm');
+    if (form) form.addEventListener('submit', submitMath);
+    const remove = $('#mathRemove');
+    if (remove) remove.addEventListener('click', removeMath);
+    const dialog = $('#mathDialog');
+    if (dialog) dialog.addEventListener('close', function () { state.mathEditing = null; });
+  }
+
   /* ---------- Diálogos ---------- */
 
   function getSelectedText() {
@@ -2484,6 +2649,110 @@
     if (dialog) dialog.showModal();
   }
 
+  /* ---------- Vista previa ---------- */
+
+  const EMPTY_PREVIEW = '<!doctype html><html lang="es"><meta charset="utf-8"><style>html,body{height:100%}body{margin:0;display:flex;align-items:center;justify-content:center;background:#fff;color:#8b8b8b;font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;padding:24px}</style><body>El documento está vacío.<br>Escribe algo para verlo aquí.</body></html>';
+
+  function previewSource() {
+    if (state.lastEdited === 'visual') flushVisualToSource();
+    const body = App.extractBody(getWorkingHtml()).html;
+    if (!body.trim()) return '';
+    const wrapped = App.wrapDocument(body, state.docTitle || 'Documento');
+    // Los enlaces se abren en una pestaña nueva para no perder la vista previa.
+    return wrapped.replace('<head>', '<head>\n  <base target="_blank">');
+  }
+
+  function previewScrollRatio() {
+    const frame = $('#previewFrame');
+    try {
+      const win = frame && frame.contentWindow;
+      if (!win || !win.document) return 0;
+      const max = win.document.documentElement.scrollHeight - win.innerHeight;
+      return max > 0 ? win.scrollY / max : 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  function renderPreview() {
+    const frame = $('#previewFrame');
+    if (!frame) return;
+    state.previewRatio = previewScrollRatio();
+    const source = previewSource();
+    frame.srcdoc = source || EMPTY_PREVIEW;
+  }
+
+  function schedulePreviewRefresh() {
+    const dialog = $('#previewDialog');
+    if (!dialog || !dialog.open) return;
+    clearTimeout(state.previewTimer);
+    state.previewTimer = setTimeout(renderPreview, 650);
+  }
+
+  function applyPreviewDevice() {
+    const stage = $('#previewStage');
+    if (stage) stage.setAttribute('data-device', state.previewDevice);
+    $$('.preview-device').forEach(function (button) {
+      const active = button.dataset.device === state.previewDevice;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function openPreview() {
+    const dialog = $('#previewDialog');
+    if (!dialog) return;
+    applyPreviewDevice();
+    if (!dialog.open) dialog.showModal();
+    renderPreview();
+  }
+
+  function openPreviewInTab() {
+    const source = previewSource();
+    if (!source) {
+      App.toast('El documento está vacío. Escribe algo antes de abrir la vista previa.', 'warn');
+      return;
+    }
+    const url = URL.createObjectURL(new Blob([source], { type: 'text/html;charset=utf-8' }));
+    const opened = window.open(url, '_blank', 'noopener');
+    if (!opened) App.toast('El navegador ha bloqueado la pestaña nueva.', 'warn', 5000);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+  }
+
+  function bindPreview() {
+    const button = $('#previewBtn');
+    if (button) button.addEventListener('click', openPreview);
+    $$('.preview-device').forEach(function (device) {
+      device.addEventListener('click', function () {
+        state.previewDevice = device.dataset.device === 'mobile' ? 'mobile' : 'desktop';
+        applyPreviewDevice();
+      });
+    });
+    const refresh = $('#previewRefresh');
+    if (refresh) refresh.addEventListener('click', renderPreview);
+    const openTab = $('#previewOpen');
+    if (openTab) openTab.addEventListener('click', openPreviewInTab);
+    const frame = $('#previewFrame');
+    if (frame) {
+      frame.addEventListener('load', function () {
+        const ratio = state.previewRatio || 0;
+        if (!ratio) return;
+        try {
+          const win = frame.contentWindow;
+          const max = win.document.documentElement.scrollHeight - win.innerHeight;
+          if (max > 0) win.scrollTo(0, max * ratio);
+        } catch (error) { /* sin acceso: se queda arriba */ }
+      });
+    }
+    const dialog = $('#previewDialog');
+    if (dialog) {
+      dialog.addEventListener('close', function () {
+        clearTimeout(state.previewTimer);
+        state.previewRatio = 0;
+      });
+    }
+  }
+
   /* ---------- Descargas ---------- */
 
   function closeDownloadMenu() {
@@ -2573,7 +2842,13 @@
 
   function bindTopbar() {
     $$('.viewswitch-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () { setView(btn.dataset.view); });
+      btn.addEventListener('click', function () {
+        if (btn.dataset.view === 'split' && state.view === 'split') {
+          toggleSwap();
+          return;
+        }
+        setView(btn.dataset.view);
+      });
     });
 
     const openBtn = $('#openBtn');
@@ -2633,6 +2908,9 @@
   }
 
   function bindToolbar() {
+    const visualNew = $('#visualNewBtn');
+    if (visualNew) visualNew.addEventListener('click', newDocument);
+
     const toolbar = $('#formatToolbar');
     if (toolbar) {
       toolbar.addEventListener('click', function (event) {
@@ -2798,7 +3076,7 @@
   }
 
   function bindDialogs() {
-    ['#linkDialog', '#imageDialog', '#tableDialog', '#emojiDialog', '#charDialog', '#videoDialog', '#dateDialog', '#printDialog', '#helpDialog', '#confirmDialog'].forEach(function (selector) {
+    ['#linkDialog', '#imageDialog', '#tableDialog', '#emojiDialog', '#charDialog', '#videoDialog', '#dateDialog', '#printDialog', '#mathDialog', '#previewDialog', '#helpDialog', '#confirmDialog'].forEach(function (selector) {
       App.wireDialogClose($(selector));
     });
 
@@ -3055,6 +3333,9 @@
       } else if (key === 'k' && !event.altKey) {
         event.preventDefault();
         openLinkDialog();
+      } else if (key === 'p' && event.shiftKey) {
+        event.preventDefault();
+        openPreview();
       } else if (key === 'p' && !event.shiftKey) {
         event.preventDefault();
         openPrintDialog();
@@ -3204,6 +3485,7 @@
     state.view = VIEWS.indexOf(state.settings.view) !== -1 ? state.settings.view : 'split';
     state.split = clamp(Number(state.settings.split) || 50, 20, 80);
     state.autoScroll = state.settings.autoScroll !== false;
+    state.swapped = state.settings.swapped === true;
     state.spellcheck = state.settings.spellcheck !== false;
     state.codeLang = state.settings.codeLang === 'md' ? 'md' : 'html';
     state.mdKeepHtml = state.settings.mdKeepHtml !== false;
@@ -3252,6 +3534,8 @@
     bindColors();
     bindGlyphPalettes();
     bindMarkdownSwitch();
+    bindMath();
+    bindPreview();
     bindFileName();
     bindPrintDialog();
     bindDateDialog();
@@ -3265,6 +3549,7 @@
     updateEncodingBtn();
     setSpellcheck(state.spellcheck, true);
     setAutoScroll(state.autoScroll, true);
+    applySwap();
     setView(state.view, true);
     setCodeLang(state.codeLang, true);
     setMdKeep(state.mdKeepHtml, true);

@@ -170,14 +170,14 @@
       Array.from(doc.body.querySelectorAll(tag)).forEach(unwrap);
     });
     eachElement(doc, (el) => {
-      if (el.closest('svg,math')) return;
+      if (el.closest('svg,math,.math[data-tex]')) return;
       STYLE_ATTRS.forEach((attr) => el.removeAttribute(attr));
     });
   }
 
   function runClassesIds(doc) {
     eachElement(doc, (el) => {
-      if (el.closest('svg,math')) return;
+      if (el.closest('svg,math,.math[data-tex]')) return;
       el.removeAttribute('class');
       el.removeAttribute('id');
       Array.from(el.attributes).forEach((attr) => {
@@ -200,7 +200,7 @@
       for (const el of elements) {
         const tag = el.tagName.toLowerCase();
         if (KEEP_EMPTY.has(tag)) continue;
-        if (el.closest('svg,math,pre,code,script,style,textarea')) continue;
+        if (el.closest('svg,math,.math[data-tex],pre,code,script,style,textarea')) continue;
         if (meaningfulMedia(el)) continue;
         const text = (el.textContent || '').replace(/&nbsp;/g, '').replace(/[\s\u00a0]/g, '');
         if (onlyWhitespace) {
@@ -222,7 +222,7 @@
   function runRepeatedSpaces(doc) {
     walkTextNodes(doc.body, (node) => {
       const parent = node.parentElement;
-      if (parent && parent.closest('pre,code,textarea,script,style')) return;
+      if (parent && parent.closest('pre,code,textarea,script,style,math,.math[data-tex]')) return;
       node.nodeValue = node.nodeValue.replace(/[ \t\u00a0]{2,}/g, ' ');
     });
   }
@@ -237,7 +237,7 @@
 
   function runAttributes(doc) {
     eachElement(doc, (el) => {
-      if (el.closest('svg,math')) return;
+      if (el.closest('svg,math,.math[data-tex]')) return;
       const tag = el.tagName.toLowerCase();
       const allowed = ALLOWED_ATTRS[tag] || [];
       Array.from(el.attributes).forEach((attr) => {
@@ -361,7 +361,7 @@
   function tidyMarkup(doc) {
     // Etiquetas de Office/XML: <o:p>, <w:sdt>, <v:shape>…
     const namespaced = Array.from(doc.body.querySelectorAll('*')).filter((el) => {
-      if (el.closest('svg,math')) return false;
+      if (el.closest('svg,math,.math[data-tex]')) return false;
       return /:/.test(el.tagName);
     });
     namespaced.forEach(unwrap);
@@ -371,7 +371,7 @@
 
     // Atributos vacíos y URLs peligrosas
     eachElement(doc, (el) => {
-      if (el.closest('svg,math')) return;
+      if (el.closest('svg,math,.math[data-tex]')) return;
       Array.from(el.attributes).forEach((attr) => {
         const name = attr.name.toLowerCase();
         if (name.startsWith('on')) el.removeAttribute(attr.name);
@@ -645,6 +645,9 @@
       '    .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }',
       '    .video-embed figcaption { margin-top: 6px; color: #6b7280; font-size: .875em; }',
       '    .video-embed--file video { display: block; max-width: 100%; height: auto; border-radius: 8px; }',
+      '    .math--inline { display: inline-block; vertical-align: middle; max-width: 100%; }',
+      '    .math--block { display: block; margin: 1em 0; overflow-x: auto; text-align: center; }',
+      '    .math math { font-size: 1.08em; }',
       '    @media print { body { padding: 0; } .video-embed { break-inside: avoid; } }',
     ].join('\n');
     return [

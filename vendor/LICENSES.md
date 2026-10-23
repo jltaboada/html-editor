@@ -7,6 +7,7 @@ original; los textos completos están disponibles en los repositorios indicados.
 | Librería | Versión | Archivos | Licencia |
 | --- | --- | --- | --- |
 | [CodeMirror](https://github.com/codemirror/codemirror5) | 5.65.16 | `codemirror/codemirror.min.js`, `codemirror/codemirror.min.css`, modos `xml`, `javascript`, `css`, `htmlmixed`, `markdown` y addons `fold/xml-fold`, `edit/matchtags`, `edit/closetag`, `selection/active-line` | MIT |
+| [KaTeX](https://github.com/KaTeX/KaTeX) | 0.16.11 | `katex.min.js` (LaTeX → MathML) | MIT |
 | [marked](https://github.com/markedjs/marked) | 15.0.12 | `marked.umd.min.js` (Markdown → HTML) | MIT |
 | [Turndown](https://github.com/mixmark-io/turndown) | 7.2.4 | `turndown.min.js` (HTML → Markdown) | MIT |
 | [turndown-plugin-gfm](https://github.com/mixmark-io/turndown-plugin-gfm) | 1.0.2 | `turndown-plugin-gfm.min.js` (tablas, tachado y listas de tareas) | MIT |

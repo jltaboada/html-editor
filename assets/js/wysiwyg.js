@@ -67,6 +67,13 @@
     code { padding: 2px 5px; border-radius: 4px; background: #f2f2f2; font-family: "Courier New", Courier, monospace; font-size: .9em; }
     pre code { padding: 0; background: none; }
     hr { border: 0; border-top: 1px solid #e0e0e0; margin: 1.8em 0; }
+    .math { max-width: 100%; }
+    .math--inline { display: inline-block; vertical-align: middle; }
+    .math--block { display: block; margin: 1em 0; overflow-x: auto; overflow-y: hidden; text-align: center; }
+    .math math { font-size: 1.08em; }
+    .math--block math { margin: 0 auto; }
+    .math[contenteditable="false"] { cursor: default; }
+    .math:hover { outline: 1px dashed rgba(156, 59, 45, .45); outline-offset: 2px; }
     mark { background: #f4e0da; padding: 0 2px; }
     small { font-size: .85em; }
     sup, sub { line-height: 0; }
@@ -126,6 +133,7 @@
     html[data-theme="dark"] pre code { background: none; }
     html[data-theme="dark"] hr { border-top-color: #333333; }
     html[data-theme="dark"] mark { background: #4a231c; color: #ffffff; }
+    html[data-theme="dark"] .math:hover { outline-color: rgba(223, 140, 125, .6); }
     html[data-theme="dark"] ::selection { background: rgba(208, 105, 90, .3); }
     @media (max-width: 640px) {
       body { padding: 28px 22px 80px; }
@@ -232,6 +240,12 @@
         if (target && target.tagName === 'IMG' && opts.onEditImage) {
           event.preventDefault();
           opts.onEditImage(target);
+          return;
+        }
+        const math = target && target.closest ? target.closest('.math[data-tex]') : null;
+        if (math && opts.onEditMath) {
+          event.preventDefault();
+          opts.onEditMath(math);
         }
       });
 
@@ -542,10 +556,21 @@
       return html;
     }
 
-    /** Texto visible del documento, tal y como lo pinta el navegador. */
+    /**
+     * Texto visible del documento, tal y como lo pinta el navegador. Las
+     * ecuaciones se ocultan al medir: su MathML no es texto del documento y
+     * falsearía el recuento de caracteres y palabras.
+     */
     function getText() {
       if (!state.ready) return '';
-      return state.body.innerText || state.body.textContent || '';
+      const hidden = [];
+      state.body.querySelectorAll('.math[data-tex]').forEach(function (node) {
+        hidden.push([node, node.style.display]);
+        node.style.display = 'none';
+      });
+      const text = state.body.innerText || state.body.textContent || '';
+      hidden.forEach(function (pair) { pair[0].style.display = pair[1]; });
+      return text;
     }
 
     function setTheme(theme) {
@@ -650,6 +675,21 @@
         sel.addRange(after);
         state.savedRange = after.cloneRange();
       }
+      if (opts.onInput) opts.onInput(api.getHtml());
+      if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
+      return true;
+    }
+
+    /** Sustituye un nodo del documento por el HTML indicado ('' lo elimina). */
+    function replaceElement(node, html) {
+      if (!state.ready || !node || !node.parentNode) return false;
+      const holder = state.doc.createElement('div');
+      holder.innerHTML = String(html == null ? '' : html);
+      const fragment = state.doc.createDocumentFragment();
+      while (holder.firstChild) fragment.appendChild(holder.firstChild);
+      node.parentNode.replaceChild(fragment, node);
+      state.savedRange = null;
+      state.body.classList.toggle('is-empty', isEmptyDocument());
       if (opts.onInput) opts.onInput(api.getHtml());
       if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
       return true;
@@ -972,6 +1012,7 @@
       clearFormatting,
       insertHtml,
       insertFragment,
+      replaceElement,
       insertLink,
       removeLink,
       insertImage,
