@@ -200,6 +200,13 @@
       });
       state.body.addEventListener('keydown', onKeyDown);
       state.body.addEventListener('click', onLinkClick);
+      state.body.addEventListener('dblclick', function (event) {
+        const target = event.target;
+        if (target && target.tagName === 'IMG' && opts.onEditImage) {
+          event.preventDefault();
+          opts.onEditImage(target);
+        }
+      });
 
       state.ready = true;
       emitSelection();
@@ -381,6 +388,51 @@
       return link && isInsideBody(link) ? link : null;
     }
 
+    function imageFromRange(range) {
+      if (!range) return null;
+      let scope = range.commonAncestorContainer;
+      if (scope.nodeType === 3) scope = scope.parentNode;
+      if (scope && scope.tagName === 'IMG') return scope;
+      if (range.collapsed) return null;
+      if (range.startContainer === range.endContainer && range.startContainer.nodeType === 1) {
+        const child = range.startContainer.childNodes[range.startOffset];
+        if (child && child.tagName === 'IMG') return child;
+      }
+      if (!scope || !scope.querySelectorAll) return null;
+      const hits = Array.prototype.filter.call(scope.querySelectorAll('img'), function (img) {
+        try { return range.intersectsNode(img); } catch (error) { return false; }
+      });
+      return hits.length === 1 ? hits[0] : null;
+    }
+
+    function getImageElement() {
+      if (!state.ready) return null;
+      const sel = state.doc.getSelection();
+      const live = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+      const range = live && !live.collapsed ? live : (state.savedRange || live);
+      const fromRange = imageFromRange(range);
+      if (fromRange && isInsideBody(fromRange)) return fromRange;
+      // El cursor puede estar dentro de una imagen o justo después
+      let node = sel && sel.anchorNode ? sel.anchorNode : (range ? range.commonAncestorContainer : null);
+      if (node && node.nodeType === 3) node = node.parentNode;
+      if (!node || !node.closest) return null;
+      const direct = node.closest('img');
+      if (direct && isInsideBody(direct)) return direct;
+      if (range && !range.collapsed) return null;
+      let element = node;
+      while (element && element !== state.body) {
+        let prev = element.previousSibling;
+        while (prev && prev.nodeType !== 1) prev = prev.previousSibling;
+        if (prev) {
+          const img = prev.tagName === 'IMG' ? prev : (prev.querySelector ? prev.querySelector('img') : null);
+          if (img && isInsideBody(img)) return img;
+          break;
+        }
+        element = element.parentElement;
+      }
+      return null;
+    }
+
     function getState() {
       const blockRaw = queryValue('formatBlock');
       const block = String(blockRaw || '').replace(/[<>]/g, '').toLowerCase();
@@ -487,6 +539,32 @@
       if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
     }
 
+    /**
+     * Inserta HTML conservando etiquetas que execCommand descarta (por
+     * ejemplo <time>) y deja el cursor justo después del contenido.
+     */
+    function insertFragment(html) {
+      if (!state.ready) return false;
+      const range = currentRange();
+      if (!range || !range.createContextualFragment) return false;
+      const fragment = range.createContextualFragment(String(html || ''));
+      const last = fragment.lastChild;
+      range.deleteContents();
+      range.insertNode(fragment);
+      if (last) {
+        const after = state.doc.createRange();
+        after.setStartAfter(last);
+        after.collapse(true);
+        const sel = state.doc.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(after);
+        state.savedRange = after.cloneRange();
+      }
+      if (opts.onInput) opts.onInput(api.getHtml());
+      if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
+      return true;
+    }
+
     function insertNode(node, afterNode) {
       const range = currentRange();
       if (!range) return;
@@ -585,6 +663,52 @@
         sel.addRange(range);
         state.savedRange = range.cloneRange();
       }
+    }
+
+    function updateImage(img, data) {
+      if (!state.ready || !img || !img.isConnected || !isInsideBody(img)) return;
+      const info = data || {};
+      const src = String(info.src || img.getAttribute('src') || '').trim();
+      if (src) img.setAttribute('src', src);
+      img.setAttribute('alt', info.alt || '');
+      if (info.width) img.setAttribute('width', String(info.width));
+      else img.removeAttribute('width');
+
+      let anchor = img.parentNode && img.parentNode.tagName === 'A' ? img.parentNode : null;
+      if (info.link) {
+        if (!anchor) {
+          anchor = state.doc.createElement('a');
+          img.parentNode.insertBefore(anchor, img);
+          anchor.appendChild(img);
+        }
+        anchor.setAttribute('href', src);
+        anchor.setAttribute('target', '_blank');
+        anchor.setAttribute('rel', 'noopener noreferrer');
+      } else if (anchor) {
+        const parent = anchor.parentNode;
+        parent.insertBefore(img, anchor);
+        anchor.remove();
+      }
+
+      state.savedRange = null;
+      if (opts.onInput) opts.onInput(api.getHtml());
+      if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
+    }
+
+    function removeImage(img) {
+      if (!state.ready || !img || !img.isConnected) return;
+      const anchor = img.parentNode && img.parentNode.tagName === 'A' ? img.parentNode : null;
+      (anchor || img).remove();
+      state.savedRange = null;
+      if (opts.onInput) opts.onInput(api.getHtml());
+      if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
+    }
+
+    function setSpellcheck(on) {
+      if (!state.ready) return;
+      const value = on !== false ? 'true' : 'false';
+      state.body.setAttribute('spellcheck', value);
+      try { state.body.spellcheck = on !== false; } catch (error) { /* ignorar */ }
     }
 
     function insertTable(rows, cols, withHeader, withBorder) {
@@ -757,11 +881,16 @@
       applyColor,
       clearFormatting,
       insertHtml,
+      insertFragment,
       insertLink,
       removeLink,
       insertImage,
+      updateImage,
+      removeImage,
+      setSpellcheck,
       insertTable,
       getLinkElement,
+      getImageElement,
       getState,
       getScrollInfo,
       setScrollRatio,

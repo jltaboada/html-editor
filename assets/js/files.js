@@ -162,7 +162,7 @@
   function downloadHtml(html, options) {
     const opts = options || {};
     const prepared = prepareDocument(html, opts.title);
-    const slug = App.slugify(prepared.title, 'documento');
+    const slug = App.safeFileName(prepared.title, 'documento');
     const hasImages = App.hasEmbeddedImages(html);
 
     if (opts.forceZip || hasImages) {
@@ -182,7 +182,7 @@
       return Promise.reject(new Error('La librería de exportación DOCX no está disponible.'));
     }
     const prepared = prepareDocument(html, title);
-    const slug = App.slugify(prepared.title, 'documento');
+    const slug = App.safeFileName(prepared.title, 'documento');
 
     try {
       const blob = global.htmlDocx.asBlob(prepared.document, {

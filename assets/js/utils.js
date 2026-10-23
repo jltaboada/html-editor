@@ -72,6 +72,19 @@
     return base || fallback || 'documento';
   };
 
+  /**
+   * Nombre de archivo legible y seguro: conserva espacios y acentos,
+   * elimina solo lo que el sistema de archivos no admite.
+   */
+  App.safeFileName = function (value, fallback) {
+    const base = String(value == null ? '' : value)
+      .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/^[.\s]+|[.\s]+$/g, '')
+      .slice(0, 80);
+    return base || fallback || 'documento';
+  };
+
   App.formatBytes = function (bytes) {
     if (!bytes) return '0 KB';
     if (bytes < 1024) return bytes + ' B';

@@ -44,7 +44,10 @@
     cleanIds: [],
     colors: { text: '#222222', highlight: '#fff3cd' },
     colorTarget: 'text',
+    print: { size: 'a4', orientation: 'portrait', margins: 'normal' },
+    spellcheck: true,
     imageData: null,
+    imageEditing: null,
     history: [],
     future: [],
     scrollLock: null,
@@ -225,12 +228,14 @@
       onScroll: onVisualScroll,
       onDropFiles: handleDroppedFiles,
       onShortcut: onVisualShortcut,
+      onEditImage: function (img) { openImageDialog(img); },
     });
 
     state.wysiwyg.ready.then(function () {
       const html = state.pendingVisualHtml != null ? state.pendingVisualHtml : (state.cm ? state.cm.getValue() : state.initialHtml);
       state.pendingVisualHtml = null;
       state.wysiwyg.setHtml(html || '');
+      state.wysiwyg.setSpellcheck(state.spellcheck);
       updateToolbarState(state.wysiwyg.getState());
       refreshMeta();
       if (state.wysiwyg.document) {
@@ -283,7 +288,7 @@
     else if (action === 'link') openLinkDialog();
     else if (action === 'indent') indentCode();
     else if (action === 'download') exportAs('html');
-    else if (action === 'print') printDocument();
+    else if (action === 'print') openPrintDialog();
     else if (action === 'help') openHelp();
   }
 
@@ -333,13 +338,23 @@
     updateDocTitle(html);
   }
 
+  function sizeFileNameInput(input) {
+    if (!input) return;
+    const length = String(input.value || '').length;
+    // El ancho real de un carácter puede superar 1ch según la fuente monoespaciada
+    input.style.width = Math.max(8, Math.min(44, length + 1.5)) + 'ch';
+  }
+
   function updateDocTitle(html) {
     const derived = App.getDocumentTitle(html, state.baseTitle || 'sin-titulo');
     state.docTitle = state.titleLocked
       ? (state.baseTitle || derived || 'Documento')
       : (derived || state.baseTitle || 'Documento');
     const name = $('#fileName');
-    if (name) name.textContent = App.slugify(state.docTitle, 'sin-titulo') + '.html';
+    if (name && document.activeElement !== name) {
+      name.value = state.titleLocked ? state.docTitle : App.slugify(state.docTitle, 'sin-titulo');
+      sizeFileNameInput(name);
+    }
     document.title = (state.docTitle || 'Documento') + ' · Editor HTML';
   }
 
@@ -434,6 +449,8 @@
         autoScroll: state.autoScroll,
         cleanIds: state.cleanIds,
         colors: state.colors,
+        spellcheck: state.spellcheck,
+        print: state.print,
       }));
     } catch (error) { /* sin persistencia */ }
   }
@@ -1152,15 +1169,22 @@
 
   /* ---------- Emoticonos y caracteres especiales ---------- */
 
+  const RECENT_KEY = 'htmlEditor.recent.v1';
+  const RECENT_MAX = 18;
+
   const glyphState = {
-    emojiTab: 'comunes',
-    emojiQuery: '',
-    charTab: '',
+    emojiSet: 'common',
+    emojiDialogSet: 'caras',
+    emojiDialogQuery: '',
+    charSet: 'puntuacion',
     charQuery: '',
   };
 
   let emojiListCache = null;
+  let emojiMapCache = null;
   let emojiCategoryCache = null;
+  let charMapCache = null;
+  let recentStore = null;
 
   function normalizeText(value) {
     return String(value == null ? '' : value)
@@ -1185,28 +1209,36 @@
     return list;
   }
 
+  function getEmojiMap() {
+    if (emojiMapCache) return emojiMapCache;
+    const map = new Map();
+    getEmojiList().forEach(function (item) { if (!map.has(item.char)) map.set(item.char, item); });
+    emojiMapCache = map;
+    return map;
+  }
+
   function getEmojiCategories() {
     if (emojiCategoryCache) return emojiCategoryCache;
-    const groups = Array.isArray(App.EMOJI_GROUPS) ? App.EMOJI_GROUPS : [];
-    const lookup = new Map();
-    getEmojiList().forEach(function (item) { if (!lookup.has(item.char)) lookup.set(item.char, item); });
-    const common = (Array.isArray(App.EMOJI_COMMON) ? App.EMOJI_COMMON : []).map(function (char) {
-      const found = lookup.get(char);
-      return { char: char, label: found ? found.label : 'Emoticono' };
-    });
-    const list = [{ id: 'comunes', label: 'Más usados', items: common }];
-    groups.forEach(function (group) {
-      list.push({
+    const list = (Array.isArray(App.EMOJI_GROUPS) ? App.EMOJI_GROUPS : []).map(function (group) {
+      return {
         id: group.id,
         label: group.label,
         items: (group.emojis || []).map(function (raw) {
           const parts = String(raw).split('|');
           return { char: parts[0], label: parts[1] || '' };
         }).filter(function (item) { return !!item.char; }),
-      });
+      };
     });
     emojiCategoryCache = list;
     return list;
+  }
+
+  function getCommonEmojiItems() {
+    const map = getEmojiMap();
+    return (Array.isArray(App.EMOJI_COMMON) ? App.EMOJI_COMMON : []).map(function (char) {
+      const found = map.get(char);
+      return { char: char, label: found ? found.label : 'Emoticono' };
+    }).filter(function (item) { return !!item.char; });
   }
 
   function getCharCategories() {
@@ -1221,20 +1253,102 @@
     });
   }
 
-  function renderGlyphTabs(container, categories, activeId, query, onPick) {
-    if (!container) return;
-    container.innerHTML = '';
-    categories.forEach(function (category) {
-      const active = !query && category.id === activeId;
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'glyph-tab' + (active ? ' is-active' : '');
-      button.setAttribute('role', 'tab');
-      button.setAttribute('aria-selected', active ? 'true' : 'false');
-      button.textContent = category.label;
-      button.addEventListener('click', function () { onPick(category.id); });
-      container.appendChild(button);
+  function getCharMap() {
+    if (charMapCache) return charMapCache;
+    const map = new Map();
+    getCharCategories().forEach(function (category) {
+      category.items.forEach(function (item) { if (!map.has(item.char)) map.set(item.char, item); });
     });
+    charMapCache = map;
+    return map;
+  }
+
+  /* --- recientes --- */
+
+  function getRecent() {
+    if (recentStore) return recentStore;
+    let data = null;
+    try { data = JSON.parse(localStorage.getItem(RECENT_KEY) || 'null'); } catch (error) { data = null; }
+    recentStore = {
+      emojis: data && Array.isArray(data.emojis) ? data.emojis.filter(function (item) { return typeof item === 'string'; }).slice(0, RECENT_MAX) : [],
+      chars: data && Array.isArray(data.chars) ? data.chars.filter(function (item) { return typeof item === 'string'; }).slice(0, RECENT_MAX) : [],
+    };
+    return recentStore;
+  }
+
+  function rememberGlyph(kind, char) {
+    if (!char) return;
+    const store = getRecent();
+    const key = kind === 'emoji' ? 'emojis' : 'chars';
+    const list = store[key];
+    const index = list.indexOf(char);
+    if (index !== -1) list.splice(index, 1);
+    list.unshift(char);
+    if (list.length > RECENT_MAX) list.length = RECENT_MAX;
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(store)); } catch (error) { /* sin persistencia */ }
+    syncRecentLabels();
+  }
+
+  function recentEmojiItems() {
+    const map = getEmojiMap();
+    return getRecent().emojis.map(function (char) {
+      const found = map.get(char);
+      return { char: char, label: found ? found.label : 'Emoticono' };
+    });
+  }
+
+  function recentCharItems() {
+    const map = getCharMap();
+    return getRecent().chars.map(function (char) {
+      const found = map.get(char);
+      return { char: char, label: found ? found.label : 'Carácter especial' };
+    });
+  }
+
+  function syncRecentLabels() {
+    const emojiOption = document.querySelector('#emojiSet option[value="recent"]');
+    if (emojiOption) {
+      const count = getRecent().emojis.length;
+      emojiOption.textContent = count ? 'Recientes (' + count + ')' : 'Recientes';
+    }
+    const charOption = document.querySelector('#charSet option[value="recent"]');
+    if (charOption) {
+      const count = getRecent().chars.length;
+      charOption.textContent = count ? 'Recientes (' + count + ')' : 'Recientes';
+    }
+  }
+
+  /* --- pintado --- */
+
+  function buildCharSetOptions() {
+    const select = $('#charSet');
+    if (!select) return;
+    const options = [{ id: 'recent', label: 'Recientes' }].concat(getCharCategories());
+    const current = select.value || glyphState.charSet;
+    select.innerHTML = '';
+    options.forEach(function (option) {
+      const item = document.createElement('option');
+      item.value = option.id;
+      item.textContent = option.label;
+      select.appendChild(item);
+    });
+    select.value = options.some(function (option) { return option.id === current; }) ? current : (options[1] ? options[1].id : 'recent');
+    syncRecentLabels();
+  }
+
+  function buildEmojiDialogSetOptions() {
+    const select = $('#emojiDialogSet');
+    if (!select) return;
+    const categories = getEmojiCategories();
+    const current = select.value || glyphState.emojiDialogSet;
+    select.innerHTML = '';
+    categories.forEach(function (category) {
+      const item = document.createElement('option');
+      item.value = category.id;
+      item.textContent = category.label;
+      select.appendChild(item);
+    });
+    select.value = categories.some(function (category) { return category.id === current; }) ? current : (categories[0] ? categories[0].id : '');
   }
 
   function renderGlyphGrid(grid, items, emptyEl, emptyText) {
@@ -1260,39 +1374,18 @@
     grid.scrollTop = 0;
   }
 
-  function renderEmojiPalette() {
+  function renderEmojiPopover() {
     const grid = $('#emojiGrid');
     if (!grid) return;
-    const categories = getEmojiCategories();
-    if (!categories.length) {
-      renderGlyphGrid(grid, [], $('#emojiEmpty'), 'No se han podido cargar los emoticonos. Recarga la página.');
-      return;
-    }
-    let active = categories.filter(function (category) { return category.id === glyphState.emojiTab; })[0] || categories[0];
-    const query = normalizeText(glyphState.emojiQuery).trim();
-    renderGlyphTabs($('#emojiTabs'), categories, active.id, query, function (id) {
-      glyphState.emojiTab = id;
-      glyphState.emojiQuery = '';
-      const search = $('#emojiSearch');
-      if (search) search.value = '';
-      renderEmojiPalette();
-    });
-    let items;
-    let emptyText;
-    if (query) {
-      items = getEmojiList().filter(function (item) { return item.search.indexOf(query) !== -1; });
-      const total = items.length;
-      items = items.slice(0, 400);
-      emptyText = 'No hay emoticonos para «' + glyphState.emojiQuery.trim() + '».';
-      const count = $('#emojiCount');
-      if (count) count.textContent = total + (total === 1 ? ' resultado' : ' resultados');
-    } else {
-      items = active.items;
-      const count = $('#emojiCount');
-      if (count) count.textContent = items.length + (items.length === 1 ? ' emoticono' : ' emoticonos');
-      emptyText = 'Esta categoría está vacía.';
-    }
-    renderGlyphGrid(grid, items, $('#emojiEmpty'), emptyText);
+    const set = glyphState.emojiSet === 'recent' ? 'recent' : 'common';
+    const items = set === 'recent' ? recentEmojiItems() : getCommonEmojiItems();
+    const select = $('#emojiSet');
+    if (select && select.value !== set) select.value = set;
+    renderGlyphGrid(grid, items, $('#emojiEmpty'), set === 'recent'
+      ? 'Todavía no has usado ningún emoticono. Elige uno de «Más usados» o abre «Más emoticonos…».'
+      : 'No se han podido cargar los emoticonos. Recarga la página.');
+    const count = $('#emojiCount');
+    if (count) count.textContent = items.length + (items.length === 1 ? ' emoticono' : ' emoticonos');
   }
 
   function openEmojiPop(button) {
@@ -1306,16 +1399,14 @@
     closeDownloadMenu();
     closeAllSelectMenus();
     if (state.wysiwyg) state.wysiwyg.saveSelection();
-    glyphState.emojiQuery = '';
-    const search = $('#emojiSearch');
-    if (search) search.value = '';
-    const hint = $('#emojiHint');
-    if (hint) hint.textContent = 'Busca entre ' + getEmojiList().length.toLocaleString('es-ES') + ' emoticonos';
-    renderEmojiPalette();
+    glyphState.emojiSet = getRecent().emojis.length ? 'recent' : 'common';
+    syncRecentLabels();
+    renderEmojiPopover();
     pop.hidden = false;
     placeGlyphPopover(pop, button);
     if (button) button.setAttribute('aria-expanded', 'true');
-    if (search) setTimeout(function () { search.focus({ preventScroll: true }); }, 30);
+    const first = pop.querySelector('.glyph-btn');
+    if (first) first.focus({ preventScroll: true });
   }
 
   function closeEmojiPop() {
@@ -1336,24 +1427,61 @@
     pop.style.top = Math.round(clamp(top, 8, Math.max(8, global.innerHeight - height - 8))) + 'px';
   }
 
-  function insertGlyph(char) {
-    if (!char || !state.wysiwyg || !state.wysiwyg.isReady) return;
-    state.wysiwyg.restoreSelection();
-    state.wysiwyg.insertHtml(App.escapeHtml(char));
+  function openEmojiDialog() {
+    const dialog = $('#emojiDialog');
+    if (!dialog) return;
+    if (state.wysiwyg) state.wysiwyg.saveSelection();
+    closeEmojiPop();
+    glyphState.emojiDialogQuery = '';
+    const search = $('#emojiDialogSearch');
+    if (search) search.value = '';
+    renderEmojiDialog();
+    dialog.showModal();
+    if (search) setTimeout(function () { search.focus({ preventScroll: true }); }, 50);
+  }
+
+  function renderEmojiDialog() {
+    const grid = $('#emojiDialogGrid');
+    if (!grid) return;
+    const categories = getEmojiCategories();
+    if (!categories.length) {
+      renderGlyphGrid(grid, [], $('#emojiDialogEmpty'), 'No se han podido cargar los emoticonos. Recarga la página.');
+      return;
+    }
+    const query = normalizeText(glyphState.emojiDialogQuery).trim();
+    let items;
+    let emptyText;
+    if (query) {
+      items = getEmojiList().filter(function (item) { return item.search.indexOf(query) !== -1; }).slice(0, 500);
+      emptyText = 'No hay emoticonos para «' + glyphState.emojiDialogQuery.trim() + '».';
+    } else {
+      const active = categories.filter(function (category) { return category.id === glyphState.emojiDialogSet; })[0] || categories[0];
+      glyphState.emojiDialogSet = active.id;
+      items = active.items;
+      emptyText = 'Esta categoría está vacía.';
+    }
+    const select = $('#emojiDialogSet');
+    if (select && select.value !== glyphState.emojiDialogSet) select.value = glyphState.emojiDialogSet;
+    renderGlyphGrid(grid, items, $('#emojiDialogEmpty'), emptyText);
+    const count = $('#emojiDialogCount');
+    if (count) {
+      count.textContent = query
+        ? items.length + (items.length === 1 ? ' resultado' : ' resultados') + ' de 1.898 emoticonos.'
+        : items.length + ' emoticonos en esta categoría · 1.898 en total. Puedes insertar varios seguidos.';
+    }
   }
 
   function openCharDialog() {
     if (!state.wysiwyg) return;
     state.wysiwyg.saveSelection();
-    const categories = getCharCategories();
-    if (!glyphState.charTab && categories.length) glyphState.charTab = categories[0].id;
     glyphState.charQuery = '';
+    glyphState.charSet = getRecent().chars.length ? 'recent' : 'puntuacion';
     const search = $('#charSearch');
     if (search) search.value = '';
     renderCharPalette();
     const dialog = $('#charDialog');
     if (dialog) dialog.showModal();
-    setTimeout(function () { if (search) search.focus({ preventScroll: true }); }, 60);
+    if (search) setTimeout(function () { search.focus({ preventScroll: true }); }, 60);
   }
 
   function renderCharPalette() {
@@ -1364,16 +1492,9 @@
       renderGlyphGrid(grid, [], $('#charEmpty'), 'No se han podido cargar los caracteres.');
       return;
     }
-    let active = categories.filter(function (category) { return category.id === glyphState.charTab; })[0] || categories[0];
     const query = normalizeText(glyphState.charQuery).trim();
-    renderGlyphTabs($('#charTabs'), categories, active.id, query, function (id) {
-      glyphState.charTab = id;
-      glyphState.charQuery = '';
-      const search = $('#charSearch');
-      if (search) search.value = '';
-      renderCharPalette();
-    });
     let items;
+    let emptyText;
     if (query) {
       items = [];
       categories.forEach(function (category) {
@@ -1382,22 +1503,46 @@
         });
       });
       items = items.slice(0, 400);
+      emptyText = 'No hay caracteres para «' + glyphState.charQuery.trim() + '».';
+    } else if (glyphState.charSet === 'recent') {
+      items = recentCharItems();
+      emptyText = 'Todavía no has usado ningún carácter. Elige una categoría o usa el buscador.';
     } else {
+      const active = categories.filter(function (category) { return category.id === glyphState.charSet; })[0] || categories[0];
+      glyphState.charSet = active.id;
       items = active.items;
+      emptyText = 'Esta categoría está vacía.';
     }
-    renderGlyphGrid(grid, items, $('#charEmpty'), 'No hay caracteres para «' + glyphState.charQuery.trim() + '».');
+    const select = $('#charSet');
+    if (select && !query && select.value !== glyphState.charSet) select.value = glyphState.charSet;
+    renderGlyphGrid(grid, items, $('#charEmpty'), emptyText);
+  }
+
+  function insertGlyph(kind, char) {
+    if (!char || !state.wysiwyg || !state.wysiwyg.isReady) return;
+    state.wysiwyg.restoreSelection();
+    state.wysiwyg.insertHtml(App.escapeHtml(char));
+    rememberGlyph(kind, char);
   }
 
   function bindGlyphPalettes() {
+    buildCharSetOptions();
+    buildEmojiDialogSetOptions();
+
     const emojiButton = $('#emojiBtn');
     if (emojiButton) emojiButton.addEventListener('click', function (event) { event.stopPropagation(); openEmojiPop(emojiButton); });
     const emojiClose = $('#emojiPopClose');
     if (emojiClose) emojiClose.addEventListener('click', closeEmojiPop);
-    const emojiSearch = $('#emojiSearch');
-    if (emojiSearch) {
-      emojiSearch.addEventListener('input', function () {
-        glyphState.emojiQuery = emojiSearch.value;
-        renderEmojiPalette();
+    const emojiSet = $('#emojiSet');
+    if (emojiSet) {
+      emojiSet.addEventListener('change', function () {
+        if (emojiSet.value === 'all') {
+          emojiSet.value = glyphState.emojiSet;
+          openEmojiDialog();
+          return;
+        }
+        glyphState.emojiSet = emojiSet.value === 'recent' ? 'recent' : 'common';
+        renderEmojiPopover();
       });
     }
     const emojiGrid = $('#emojiGrid');
@@ -1405,7 +1550,7 @@
       emojiGrid.addEventListener('click', function (event) {
         const button = event.target.closest('.glyph-btn');
         if (!button) return;
-        insertGlyph(button.dataset.char);
+        insertGlyph('emoji', button.dataset.char);
         button.focus({ preventScroll: true });
       });
       emojiGrid.addEventListener('keydown', onGlyphGridKeydown);
@@ -1421,8 +1566,45 @@
       });
     }
 
+    const emojiDialogSearch = $('#emojiDialogSearch');
+    if (emojiDialogSearch) {
+      emojiDialogSearch.addEventListener('input', function () {
+        glyphState.emojiDialogQuery = emojiDialogSearch.value;
+        renderEmojiDialog();
+      });
+    }
+    const emojiDialogSet = $('#emojiDialogSet');
+    if (emojiDialogSet) {
+      emojiDialogSet.addEventListener('change', function () {
+        glyphState.emojiDialogSet = emojiDialogSet.value;
+        glyphState.emojiDialogQuery = '';
+        if (emojiDialogSearch) emojiDialogSearch.value = '';
+        renderEmojiDialog();
+      });
+    }
+    const emojiDialogGrid = $('#emojiDialogGrid');
+    if (emojiDialogGrid) {
+      emojiDialogGrid.addEventListener('click', function (event) {
+        const button = event.target.closest('.glyph-btn');
+        if (!button) return;
+        insertGlyph('emoji', button.dataset.char);
+        button.focus({ preventScroll: true });
+      });
+      emojiDialogGrid.addEventListener('keydown', onGlyphGridKeydown);
+    }
+
     const charButton = $('#charBtn');
     if (charButton) charButton.addEventListener('click', openCharDialog);
+    const charSet = $('#charSet');
+    if (charSet) {
+      charSet.addEventListener('change', function () {
+        glyphState.charSet = charSet.value;
+        glyphState.charQuery = '';
+        const search = $('#charSearch');
+        if (search) search.value = '';
+        renderCharPalette();
+      });
+    }
     const charSearch = $('#charSearch');
     if (charSearch) {
       charSearch.addEventListener('input', function () {
@@ -1435,7 +1617,7 @@
       charGrid.addEventListener('click', function (event) {
         const button = event.target.closest('.glyph-btn');
         if (!button) return;
-        insertGlyph(button.dataset.char);
+        insertGlyph('char', button.dataset.char);
         button.classList.add('is-just-inserted');
         button.focus({ preventScroll: true });
         setTimeout(function () { button.classList.remove('is-just-inserted'); }, 260);
@@ -1587,17 +1769,88 @@
 
   /* ---------- Impresión ---------- */
 
-  const PRINT_CSS = [
-    '<style>',
-    '  @page { margin: 18mm 16mm; }',
-    '  body { max-width: none; padding: 0; }',
-    '  a { color: inherit; text-decoration: underline; }',
-    '  .video-embed { break-inside: avoid; }',
-    '  .video-frame { position: relative; height: 0; padding-bottom: 56.25%; overflow: hidden; }',
-    '  .video-frame iframe, .video-frame video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }',
-    '  .video-embed--file video { max-width: 100%; height: auto; }',
-    '</style>',
-  ].join('\n');
+  const PRINT_SIZES = {
+    a4: { css: 'A4' },
+    letter: { css: 'Letter' },
+    a5: { css: 'A5' },
+    legal: { css: 'Legal' },
+  };
+
+  const PRINT_MARGINS = {
+    none: '0',
+    narrow: '10mm',
+    normal: '18mm 16mm',
+    wide: '25mm 20mm',
+  };
+
+  function currentPrintOptions() {
+    return {
+      size: PRINT_SIZES[state.print.size] ? state.print.size : 'a4',
+      orientation: state.print.orientation === 'landscape' ? 'landscape' : 'portrait',
+      margins: PRINT_MARGINS[state.print.margins] ? state.print.margins : 'normal',
+    };
+  }
+
+  function buildPrintCss(options) {
+    const opts = options || currentPrintOptions();
+    const paper = PRINT_SIZES[opts.size] || PRINT_SIZES.a4;
+    const padding = PRINT_MARGINS[opts.margins] || PRINT_MARGINS.normal;
+    return [
+      '<style>',
+      /* margin: 0 quita el encabezado y el pie que el navegador añade al imprimir */
+      '  @page { size: ' + paper.css + ' ' + opts.orientation + '; margin: 0; }',
+      '  html, body { margin: 0 !important; padding: 0 !important; background: #fff; }',
+      '  body {',
+      '    max-width: none !important;',
+      '    padding: ' + padding + ' !important;',
+      '    -webkit-print-color-adjust: exact;',
+      '    print-color-adjust: exact;',
+      '  }',
+      '  a { color: inherit; text-decoration: underline; }',
+      '  .video-embed { break-inside: avoid; }',
+      '  .video-frame { position: relative; height: 0; padding-bottom: 56.25%; overflow: hidden; }',
+      '  .video-frame iframe, .video-frame video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }',
+      '  .video-embed--file video { max-width: 100%; height: auto; }',
+      '  img, table, pre, blockquote, figure { break-inside: avoid; }',
+      '</style>',
+    ].join('\n');
+  }
+
+  function openPrintDialog() {
+    const dialog = $('#printDialog');
+    if (!dialog) {
+      printDocument();
+      return;
+    }
+    if (dialog.open) return;
+    const opts = currentPrintOptions();
+    const size = $('#printSize');
+    const orientation = $('#printOrientation');
+    const margins = $('#printMargins');
+    if (size) size.value = opts.size;
+    if (orientation) orientation.value = opts.orientation;
+    if (margins) margins.value = opts.margins;
+    dialog.showModal();
+    if (size) setTimeout(function () { size.focus({ preventScroll: true }); }, 40);
+  }
+
+  function bindPrintDialog() {
+    const form = $('#printForm');
+    if (!form) return;
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const size = $('#printSize');
+      const orientation = $('#printOrientation');
+      const margins = $('#printMargins');
+      if (size && PRINT_SIZES[size.value]) state.print.size = size.value;
+      if (orientation) state.print.orientation = orientation.value === 'landscape' ? 'landscape' : 'portrait';
+      if (margins && PRINT_MARGINS[margins.value]) state.print.margins = margins.value;
+      saveSettingsDebounced();
+      const dialog = $('#printDialog');
+      if (dialog) dialog.close();
+      printDocument();
+    });
+  }
 
   function printDocument() {
     if (state.lastEdited === 'visual') flushVisualToSource();
@@ -1608,7 +1861,7 @@
     }
     const body = App.extractBody(html).html;
     const title = state.docTitle || 'Documento';
-    const documentHtml = App.wrapDocument(body, title).replace('</head>', PRINT_CSS + '\n</head>');
+    const documentHtml = App.wrapDocument(body, title).replace('</head>', buildPrintCss() + '\n</head>');
     const previous = $('#printFrame');
     if (previous) previous.remove();
     const frame = document.createElement('iframe');
@@ -1638,6 +1891,89 @@
     });
     document.body.appendChild(frame);
     App.toast('Preparando la vista de impresión…', 'info', 2200);
+  }
+
+  /* ---------- Fecha y hora ---------- */
+
+  const DATE_FORMATS = {
+    larga: function (date) {
+      return capitalize(date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }));
+    },
+    corta: function (date) {
+      return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    },
+    semana: function (date) {
+      return capitalize(date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+    },
+    hora: function (date) {
+      return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    },
+    fechahora: function (date) {
+      return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+        ' ' + date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    },
+    iso: function (date) {
+      return date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate());
+    },
+  };
+
+  function capitalize(value) {
+    const text = String(value == null ? '' : value);
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+  }
+
+  function pad2(value) {
+    return String(value).padStart(2, '0');
+  }
+
+  function currentDateFormat() {
+    const select = $('#dateFormat');
+    return select && DATE_FORMATS[select.value] ? select.value : 'larga';
+  }
+
+  function updateDatePreview() {
+    const preview = $('#datePreview');
+    if (!preview) return;
+    const make = DATE_FORMATS[currentDateFormat()] || DATE_FORMATS.larga;
+    preview.textContent = make(new Date());
+  }
+
+  function openDateDialog() {
+    if (!state.wysiwyg) return;
+    state.wysiwyg.saveSelection();
+    updateDatePreview();
+    const dialog = $('#dateDialog');
+    if (dialog) dialog.showModal();
+    const format = $('#dateFormat');
+    if (format) setTimeout(function () { format.focus({ preventScroll: true }); }, 40);
+  }
+
+  function insertDate(event) {
+    if (event) event.preventDefault();
+    if (!state.wysiwyg) return;
+    const date = new Date();
+    const make = DATE_FORMATS[currentDateFormat()] || DATE_FORMATS.larga;
+    const text = make(date);
+    const wrapTime = $('#dateTimeTag') && $('#dateTimeTag').checked;
+    const html = wrapTime
+      ? '<time datetime="' + date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate()) +
+        'T' + pad2(date.getHours()) + ':' + pad2(date.getMinutes()) + '">' + App.escapeHtml(text) + '</time>'
+      : App.escapeHtml(text);
+    state.wysiwyg.restoreSelection();
+    if (wrapTime && state.wysiwyg.insertFragment) state.wysiwyg.insertFragment(html);
+    else state.wysiwyg.insertHtml(html);
+    const dialog = $('#dateDialog');
+    if (dialog) dialog.close();
+    App.toast('Fecha insertada.', 'success', 1800);
+  }
+
+  function bindDateDialog() {
+    const button = $('#dateBtn');
+    if (button) button.addEventListener('click', openDateDialog);
+    const select = $('#dateFormat');
+    if (select) select.addEventListener('change', updateDatePreview);
+    const form = $('#dateForm');
+    if (form) form.addEventListener('submit', insertDate);
   }
 
   /* ---------- Diálogos ---------- */
@@ -1723,9 +2059,12 @@
     App.toast('Enlace guardado.', 'success');
   }
 
-  function openImageDialog() {
+  function openImageDialog(target) {
     if (!state.wysiwyg) return;
+    const direct = target && target.tagName === 'IMG' ? target : null;
+    const existing = direct || (state.wysiwyg.getImageElement ? state.wysiwyg.getImageElement() : null);
     state.wysiwyg.saveSelection();
+    state.imageEditing = existing || null;
     state.imageData = null;
     $('#imageUrl').value = '';
     $('#imageAlt').value = '';
@@ -1736,6 +2075,27 @@
     $('#imagePreview').hidden = true;
     $('#imagePreviewImg').removeAttribute('src');
     $('#imageError').hidden = true;
+    const title = $('#imageDialogTitle');
+    const submit = $('#imageSubmit');
+    const remove = $('#imageRemove');
+    const note = $('#imageEditNote');
+    if (existing) {
+      const anchor = existing.parentNode && existing.parentNode.tagName === 'A' ? existing.parentNode : null;
+      $('#imageUrl').value = existing.getAttribute('src') || '';
+      $('#imageAlt').value = existing.getAttribute('alt') || '';
+      $('#imageWidth').value = existing.getAttribute('width') || '';
+      $('#imageNewTab').checked = !!anchor;
+      showImagePreview(existing.getAttribute('src') || '');
+      if (title) title.textContent = 'Editar imagen';
+      if (submit) submit.textContent = 'Guardar cambios';
+      if (remove) remove.hidden = false;
+      if (note) note.hidden = false;
+    } else {
+      if (title) title.textContent = 'Insertar imagen';
+      if (submit) submit.textContent = 'Insertar imagen';
+      if (remove) remove.hidden = true;
+      if (note) note.hidden = true;
+    }
     const dialog = $('#imageDialog');
     if (dialog) dialog.showModal();
     setTimeout(function () { $('#imageUrl').focus(); }, 40);
@@ -1754,6 +2114,16 @@
     box.hidden = false;
   }
 
+  function removePendingImage() {
+    if (state.imageEditing && state.wysiwyg && state.wysiwyg.removeImage) {
+      state.wysiwyg.removeImage(state.imageEditing);
+      App.toast('Imagen eliminada.', 'success', 2000);
+    }
+    state.imageEditing = null;
+    const dialog = $('#imageDialog');
+    if (dialog) dialog.close();
+  }
+
   function submitImage(event) {
     event.preventDefault();
     const src = state.imageData || safeImageUrl($('#imageUrl').value);
@@ -1763,14 +2133,22 @@
       return;
     }
     const width = Number($('#imageWidth').value);
+    const data = {
+      src: src,
+      alt: $('#imageAlt').value.trim(),
+      width: width > 0 ? Math.min(4000, Math.round(width)) : null,
+      link: $('#imageNewTab').checked,
+    };
+    if (state.imageEditing && state.wysiwyg && state.wysiwyg.updateImage) {
+      state.wysiwyg.updateImage(state.imageEditing, data);
+      state.imageEditing = null;
+      $('#imageDialog').close();
+      App.toast('Imagen actualizada.', 'success');
+      return;
+    }
     if (state.wysiwyg) {
       state.wysiwyg.restoreSelection();
-      state.wysiwyg.insertImage({
-        src: src,
-        alt: $('#imageAlt').value.trim(),
-        width: width > 0 ? Math.min(4000, Math.round(width)) : null,
-        link: $('#imageNewTab').checked,
-      });
+      state.wysiwyg.insertImage(data);
     }
     $('#imageDialog').close();
     App.toast(src.indexOf('data:') === 0 ? 'Imagen incrustada en el documento.' : 'Imagen insertada.', 'success');
@@ -1990,7 +2368,9 @@
     const video = $('#videoBtn');
     if (video) video.addEventListener('click', openVideoDialog);
     const print = $('#printBtn');
-    if (print) print.addEventListener('click', printDocument);
+    if (print) print.addEventListener('click', openPrintDialog);
+    const spellcheck = $('#spellcheckBtn');
+    if (spellcheck) spellcheck.addEventListener('click', function () { setSpellcheck(!state.spellcheck); });
     const clear = $('#clearFormatBtn');
     if (clear) {
       clear.addEventListener('click', function () {
@@ -1999,6 +2379,61 @@
     }
     const fullscreen = $('#fullscreenBtn');
     if (fullscreen) fullscreen.addEventListener('click', function () { toggleFocusMode(); });
+  }
+
+  function setSpellcheck(on, silent) {
+    state.spellcheck = on !== false;
+    if (state.wysiwyg && state.wysiwyg.setSpellcheck) state.wysiwyg.setSpellcheck(state.spellcheck);
+    const button = $('#spellcheckBtn');
+    if (button) {
+      button.classList.toggle('is-active', state.spellcheck);
+      button.setAttribute('aria-pressed', state.spellcheck ? 'true' : 'false');
+      button.title = state.spellcheck
+        ? 'Corrector ortográfico activado (clic para desactivarlo)'
+        : 'Corrector ortográfico desactivado (clic para activarlo)';
+    }
+    if (!silent) {
+      persistSettings();
+      App.toast(state.spellcheck ? 'Corrector ortográfico activado.' : 'Corrector ortográfico desactivado.', 'info', 1900);
+    }
+  }
+
+  function bindFileName() {
+    const input = $('#fileName');
+    if (!input) return;
+    input.addEventListener('focus', function () { input.select(); });
+    input.addEventListener('input', function () {
+      const clean = input.value.replace(/[\\/:*?"<>|]/g, '').replace(/\s{2,}/g, ' ');
+      if (clean !== input.value) input.value = clean;
+      sizeFileNameInput(input);
+      state.baseTitle = input.value.trim() || 'sin-titulo';
+      state.titleLocked = true;
+      state.docTitle = state.baseTitle;
+      document.title = state.docTitle + ' · Editor HTML';
+      markDirty();
+      scheduleAutoSave();
+    });
+    input.addEventListener('blur', function () {
+      if (!input.value.trim()) input.value = 'sin-titulo';
+      input.value = input.value.trim();
+      sizeFileNameInput(input);
+      state.baseTitle = input.value;
+      state.titleLocked = true;
+      state.docTitle = input.value;
+      markDirty();
+      saveDraft(false, false);
+    });
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        input.blur();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        input.value = state.titleLocked ? state.baseTitle : App.slugify(state.docTitle, 'sin-titulo');
+        sizeFileNameInput(input);
+        input.blur();
+      }
+    });
   }
 
   function bindColors() {
@@ -2048,9 +2483,16 @@
   }
 
   function bindDialogs() {
-    ['#linkDialog', '#imageDialog', '#tableDialog', '#charDialog', '#videoDialog', '#helpDialog', '#confirmDialog'].forEach(function (selector) {
+    ['#linkDialog', '#imageDialog', '#tableDialog', '#emojiDialog', '#charDialog', '#videoDialog', '#dateDialog', '#printDialog', '#helpDialog', '#confirmDialog'].forEach(function (selector) {
       App.wireDialogClose($(selector));
     });
+
+    const imageDialog = $('#imageDialog');
+    if (imageDialog) {
+      imageDialog.addEventListener('close', function () { state.imageEditing = null; });
+    }
+    const imageRemove = $('#imageRemove');
+    if (imageRemove) imageRemove.addEventListener('click', removePendingImage);
 
     const linkForm = $('#linkForm');
     if (linkForm) linkForm.addEventListener('submit', submitLink);
@@ -2105,8 +2547,12 @@
         const value = imageUrl.value.trim();
         if (value) {
           state.imageData = null;
-          showImagePreview(safeImageUrl(value));
-          $('#imagePreview').hidden = !safeImageUrl(value);
+          // Solo se pide la vista previa cuando la dirección ya es completa:
+          // así no se descargan URL relativas al escribir letra a letra.
+          const complete = value.length > 8 && /^(https?:\/\/|data:image\/|\/|\.\.?\/)/i.test(value);
+          const preview = complete ? safeImageUrl(value) : '';
+          showImagePreview(preview);
+          $('#imagePreview').hidden = !preview;
         } else if (!state.imageData) {
           showImagePreview('');
         }
@@ -2296,7 +2742,7 @@
         openLinkDialog();
       } else if (key === 'p' && !event.shiftKey) {
         event.preventDefault();
-        printDocument();
+        openPrintDialog();
       }
     });
 
@@ -2442,6 +2888,13 @@
     state.view = VIEWS.indexOf(state.settings.view) !== -1 ? state.settings.view : 'split';
     state.split = clamp(Number(state.settings.split) || 50, 20, 80);
     state.autoScroll = state.settings.autoScroll !== false;
+    state.spellcheck = state.settings.spellcheck !== false;
+    if (state.settings.print && typeof state.settings.print === 'object') {
+      const savedPrint = state.settings.print;
+      if (PRINT_SIZES[savedPrint.size]) state.print.size = savedPrint.size;
+      if (savedPrint.orientation === 'landscape' || savedPrint.orientation === 'portrait') state.print.orientation = savedPrint.orientation;
+      if (PRINT_MARGINS[savedPrint.margins]) state.print.margins = savedPrint.margins;
+    }
     state.cleanIds = loadCleanIds();
     if (state.settings.colors && typeof state.settings.colors === 'object') {
       if (typeof state.settings.colors.text === 'string') state.colors.text = state.settings.colors.text;
@@ -2473,6 +2926,9 @@
     bindDialogs();
     bindColors();
     bindGlyphPalettes();
+    bindFileName();
+    bindPrintDialog();
+    bindDateDialog();
     bindSplitter();
     bindDropzone();
     bindShortcuts();
@@ -2481,6 +2937,7 @@
     buildColorGrid();
     updateColors();
     updateEncodingBtn();
+    setSpellcheck(state.spellcheck, true);
     setAutoScroll(state.autoScroll, true);
     setView(state.view, true);
     setDockOpen(false);

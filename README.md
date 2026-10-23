@@ -38,15 +38,24 @@ python -m http.server 8080
   de resaltado, alineación, listas, sangría, enlaces, imágenes, tablas, líneas horizontales y
   limpiar formato. Los desplegables de formato, tipografía y tamaño muestran una vista previa real
   de cada opción, y el color se puede elegir en la paleta o escribiendo un código hexadecimal.
-- **Emoticonos**: un selector con los más usados y las nueve categorías completas (1.898
-  emoticonos), con búsqueda por nombre en español. Se puede insertar varios seguidos sin cerrarlo.
-- **Caracteres especiales**: comillas tipográficas, guiones, monedas, matemáticas, flechas,
-  letras acentuadas, alfabeto griego y formas, también con buscador.
+- **Emoticonos**: el botón abre un selector con **Recientes**, **Más usados** y **Más emoticonos…**,
+  que abre un diálogo con las nueve categorías (1.898 emoticonos) y buscador por nombre en español.
+  Se pueden insertar varios seguidos sin cerrar el selector ni el diálogo.
+- **Caracteres especiales**: botón **Ω** con recientes y siete categorías (puntuación tipográfica,
+  monedas, matemáticas, flechas, letras acentuadas, alfabeto griego y formas), también con buscador.
 - **Vídeo incrustado**: pega un enlace de YouTube (incluido `youtu.be`, Shorts y el minuto de
   inicio), Vimeo o Dailymotion, o la URL de un archivo `.mp4`, `.webm` u `.ogv`. El vídeo se
   inserta en un marco adaptativo 16:9 con pie de foto opcional.
-- **Imprimir**: el botón de impresión y `Ctrl`+`P` imprimen solo el documento, con una hoja de
-  estilos propia, sin la interfaz del editor.
+- **Fecha y hora**: inserta la fecha actual en seis formatos (larga, corta, día de la semana,
+  solo la hora, fecha y hora, o ISO), con vista previa y opción de envolverla en `<time>`.
+- **Imágenes editables**: al pulsar el botón de imagen con una imagen seleccionada (o al hacer
+  doble clic sobre ella) se abre el diálogo para cambiar la URL, el texto alternativo, el ancho
+  y el enlace, o para quitarla del documento.
+- **Corrector ortográfico**: el corrector del navegador está activo por defecto y se puede
+  desactivar con su botón en la barra; la preferencia se guarda.
+- **Imprimir**: el botón de impresión y `Ctrl`+`P` abren las opciones de papel (A4, Carta, A5 o
+  Legal), orientación y márgenes. La hoja de impresión tiene `@page { margin: 0 }`, de modo que el
+  navegador no añade encabezado ni pie de página y el documento se imprime como se ve.
 - **Limpieza** con 11 reglas (estilos inline, clases e IDs, etiquetas vacías, etiquetas con un
   espacio, espacios repetidos, comentarios, atributos, a texto plano, Smart `&nbsp;`, caracteres
   «IA» y scripts/estilos). El botón **Limpieza** aplica todas las reglas marcadas; cada regla
@@ -61,9 +70,11 @@ python -m http.server 8080
   actualiza cada pocos milisegundos y llega ya indentado, sin esperas ni reindentados posteriores.
   Al pegar en el panel de código también se ordena solo; *Indentar* sigue disponible y *Comprimir*
   se respeta hasta que vuelvas a editar.
+- **Nombre del archivo**: haz clic en el nombre que aparece encima del código para cambiarlo
+  (solo la parte del nombre: la extensión `.html` es fija). Se usa para descargar y se recuerda.
 - **Memoria de trabajo**: el borrador se guarda solo (también al cerrar o recargar el navegador) y,
-  al volver, se restauran el texto, la vista, la división de paneles, el desplazamiento sincronizado,
-  los colores y las reglas de limpieza marcadas.
+  al volver, se restauran el texto, el nombre, la vista, la división de paneles, el desplazamiento
+  sincronizado, los colores, el corrector, las opciones de impresión y las reglas de limpieza.
 - **Extras**: codificar/decodificar entidades HTML, indentar, comprimir, copiar el código,
   desplazamiento sincronizado de los paneles, contador de caracteres/palabras, modo enfoque y
   Lorem ipsum.
@@ -80,7 +91,7 @@ python -m http.server 8080
 | `Ctrl` + `Shift` + `K` | Ejecutar limpieza |
 | `Ctrl` + `Shift` + `F` | Indentar el código |
 | `Ctrl` + `Alt` + `D` | Descargar HTML |
-| `Ctrl` + `P` | Imprimir solo el documento |
+| `Ctrl` + `P` | Abrir las opciones de impresión |
 | `F1` | Abrir la ayuda |
 | `Esc` | Cerrar paleta/menú o salir del modo enfoque |
 
