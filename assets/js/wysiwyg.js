@@ -23,6 +23,7 @@
       unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
     }
     :root { color-scheme: light; }
+    :root[data-theme="dark"] { color-scheme: dark; }
     html, body { margin: 0; padding: 0; }
     body {
       min-height: 100vh;
@@ -38,7 +39,7 @@
     }
     body.is-empty::before {
       content: attr(data-placeholder);
-      color: #9aa3a0;
+      color: #9a9a9a;
       pointer-events: none;
     }
     h1, h2, h3, h4, h5, h6 { margin: 1.1em 0 .5em; line-height: 1.2; letter-spacing: -.015em; font-weight: 700; }
@@ -48,28 +49,28 @@
     h3 { font-size: 1.3em; }
     h4 { font-size: 1.1em; }
     h5 { font-size: 1em; }
-    h6 { font-size: .9em; text-transform: uppercase; letter-spacing: .05em; color: #5f452a; }
+    h6 { font-size: .9em; text-transform: uppercase; letter-spacing: .05em; color: #6f6f6f; }
     p { margin: 0 0 .9em; }
     ul, ol { margin: 0 0 .9em; padding-left: 1.5em; }
     li { margin: .18em 0; }
-    a { color: #02874d; text-decoration: underline; text-underline-offset: 2px; }
-    a:hover { color: #026a3d; }
+    a { color: #9c3b2d; text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: #7c2c21; }
     img { max-width: 100%; height: auto; }
     figure { margin: 1em 0; }
-    figcaption { color: #6b7280; font-size: .875em; }
+    figcaption { color: #6f6f6f; font-size: .875em; }
     table { border-collapse: collapse; max-width: 100%; margin: 1em 0; }
-    th, td { border: 1px solid #dbdbdb; padding: 7px 10px; vertical-align: top; min-width: 2em; }
-    th { background: #f2f6f5; font-weight: 700; text-align: left; }
+    th, td { border: 1px solid #dcdcdc; padding: 7px 10px; vertical-align: top; min-width: 2em; }
+    th { background: #f5f5f5; font-weight: 700; text-align: left; }
     table[border="0"] th, table[border="0"] td { border: 0; }
-    blockquote { margin: 1em 0; padding: .15em 0 .15em 16px; border-left: 3px solid #02874d; color: #4b5563; }
-    pre { margin: 1em 0; padding: 14px 16px; border: 1px solid #dddddd; border-radius: 5px; background: #f5f5f5; overflow: auto; font-family: "Courier New", Courier, monospace; font-size: .875em; line-height: 1.55; white-space: pre-wrap; }
-    code { padding: 2px 5px; border-radius: 4px; background: #f5f5f5; font-family: "Courier New", Courier, monospace; font-size: .9em; }
+    blockquote { margin: 1em 0; padding: .15em 0 .15em 16px; border-left: 3px solid #9c3b2d; color: #4a4a4a; }
+    pre { margin: 1em 0; padding: 14px 16px; border: 1px solid #e0e0e0; border-radius: 5px; background: #f7f7f7; overflow: auto; font-family: "Courier New", Courier, monospace; font-size: .875em; line-height: 1.55; white-space: pre-wrap; }
+    code { padding: 2px 5px; border-radius: 4px; background: #f2f2f2; font-family: "Courier New", Courier, monospace; font-size: .9em; }
     pre code { padding: 0; background: none; }
-    hr { border: 0; border-top: 1px solid #dddddd; margin: 1.8em 0; }
-    mark { background: #fff3cd; padding: 0 2px; }
+    hr { border: 0; border-top: 1px solid #e0e0e0; margin: 1.8em 0; }
+    mark { background: #f4e0da; padding: 0 2px; }
     small { font-size: .85em; }
     sup, sub { line-height: 0; }
-    ::selection { background: rgba(2, 135, 77, .22); }
+    ::selection { background: rgba(156, 59, 45, .2); }
     table { table-layout: auto; }
     iframe { max-width: 100%; border: 0; }
     figure.video-embed { margin: 1.2em 0; }
@@ -110,6 +111,22 @@
     }
     /* Dentro del editor el vídeo no se reproduce: el clic selecciona el marco. */
     .video-frame iframe, .video-embed--file video { pointer-events: none; }
+    /* Modo oscuro del documento */
+    html[data-theme="dark"] body { background: #141414; color: #ededed; }
+    html[data-theme="dark"] body.is-empty::before { color: #7d7d7d; }
+    html[data-theme="dark"] h6 { color: #b0b0b0; }
+    html[data-theme="dark"] a { color: #df8c7d; }
+    html[data-theme="dark"] a:hover { color: #eeb0a4; }
+    html[data-theme="dark"] figcaption { color: #a0a0a0; }
+    html[data-theme="dark"] th, html[data-theme="dark"] td { border-color: #3a3a3a; }
+    html[data-theme="dark"] th { background: #1e1e1e; }
+    html[data-theme="dark"] blockquote { border-left-color: #c25a49; color: #c7c7c7; }
+    html[data-theme="dark"] pre { border-color: #333333; background: #1b1b1b; }
+    html[data-theme="dark"] code { background: #222222; }
+    html[data-theme="dark"] pre code { background: none; }
+    html[data-theme="dark"] hr { border-top-color: #333333; }
+    html[data-theme="dark"] mark { background: #4a231c; color: #ffffff; }
+    html[data-theme="dark"] ::selection { background: rgba(208, 105, 90, .3); }
     @media (max-width: 640px) {
       body { padding: 28px 22px 80px; }
     }
@@ -128,6 +145,8 @@
       ready: false,
       savedRange: null,
       emitSelection: null,
+      theme: 'light',
+      composing: false,
     };
 
     const readyPromise = new Promise((resolve) => {
@@ -167,6 +186,14 @@
 
       state.body.setAttribute('contenteditable', 'true');
       state.body.setAttribute('spellcheck', 'true');
+      state.doc.documentElement.setAttribute('data-theme', state.theme);
+      state.body.addEventListener('compositionstart', function () { state.composing = true; });
+      state.body.addEventListener('compositionend', function () {
+        state.composing = false;
+        if (wrapLooseBlocks()) {
+          state.body.classList.toggle('is-empty', isEmptyDocument());
+        }
+      });
 
       const emitSelection = App.throttle(() => {
         if (opts.onSelectionChange) opts.onSelectionChange(api.getState());
@@ -458,11 +485,72 @@
     }
 
     /* ---------- Lectura / escritura ---------- */
+
+    const INLINE_TAGS = {
+      A: 1, ABBR: 1, B: 1, BDI: 1, BDO: 1, BR: 1, CITE: 1, CODE: 1, DATA: 1, DEL: 1,
+      DFN: 1, EM: 1, FONT: 1, I: 1, IMG: 1, INS: 1, KBD: 1, MARK: 1, Q: 1, S: 1,
+      SAMP: 1, SMALL: 1, SPAN: 1, STRONG: 1, SUB: 1, SUP: 1, TIME: 1, U: 1, VAR: 1, WBR: 1,
+    };
+
+    function isLooseInline(node) {
+      if (node.nodeType === 3) return true;
+      return node.nodeType === 1 && !!INLINE_TAGS[node.tagName];
+    }
+
+    /**
+     * Envuelve en <p> el texto o los elementos en línea que estén sueltos
+     * directamente en el body. Así la primera línea de un documento que llega
+     * como texto plano (por ejemplo desde el panel de código) también es un
+     * párrafo y el HTML generado es siempre válido.
+     */
+    function wrapLooseBlocks() {
+      if (!state.ready || state.composing) return false;
+      const body = state.body;
+      const runs = [];
+      let run = null;
+      Array.prototype.forEach.call(body.childNodes, function (node) {
+        if (isLooseInline(node)) {
+          if (!run) {
+            run = [];
+            runs.push(run);
+          }
+          run.push(node);
+        } else {
+          run = null;
+        }
+      });
+      let changed = false;
+      runs.forEach(function (nodes) {
+        const meaningful = nodes.some(function (node) {
+          return node.nodeType === 1 || String(node.nodeValue || '').trim() !== '';
+        });
+        if (!meaningful) return;
+        if (nodes.length === 1 && nodes[0].nodeName === 'BR') return;
+        const paragraph = state.doc.createElement('p');
+        body.insertBefore(paragraph, nodes[0]);
+        nodes.forEach(function (node) { paragraph.appendChild(node); });
+        changed = true;
+      });
+      return changed;
+    }
+
     function getHtml() {
       if (!state.ready) return '';
+      wrapLooseBlocks();
       const html = state.body.innerHTML || '';
       if (!html || html === '<br>' || html === '<p><br></p>') return '';
       return html;
+    }
+
+    /** Texto visible del documento, tal y como lo pinta el navegador. */
+    function getText() {
+      if (!state.ready) return '';
+      return state.body.innerText || state.body.textContent || '';
+    }
+
+    function setTheme(theme) {
+      state.theme = theme === 'dark' ? 'dark' : 'light';
+      if (state.doc) state.doc.documentElement.setAttribute('data-theme', state.theme);
     }
 
     function setHtml(html) {
@@ -482,6 +570,8 @@
       state.body.innerHTML = value;
       if (!value || !state.body.textContent.trim() && !state.body.querySelector('img,table,hr,ul,ol,blockquote')) {
         state.body.innerHTML = '<p><br></p>';
+      } else {
+        wrapLooseBlocks();
       }
       state.body.classList.toggle('is-empty', isEmptyDocument());
       if (restoreRange && isInsideBody(restoreRange.commonAncestorContainer)) {
@@ -892,6 +982,8 @@
       getLinkElement,
       getImageElement,
       getState,
+      getText,
+      setTheme,
       getScrollInfo,
       setScrollRatio,
       normalizeFonts,

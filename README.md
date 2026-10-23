@@ -1,4 +1,4 @@
-# Editor WYSIWYG · BeayPePeTools
+# Editor WYSIWYG · jltaboada
 
 Editor WYSIWYG que funciona **100% en el navegador**, sin servidor ni instalación: un panel visual
 sincronizado en tiempo real con un panel de código que puede mostrarse en **HTML o Markdown**,
@@ -10,8 +10,8 @@ Es una reimplementación original inspirada en las herramientas del editor onlin
 [HTML-Online](https://html-online.com/html-editor/). No contiene código, textos ni recursos
 copiados del original.
 
-El tema visual sigue la paleta y la tipografía de [BeayPePeTools](https://beaypepetools.com/):
-verde `#02874d`, marrón `#5f452a` y la fuente Varela Round.
+La interfaz usa blanco, negro y rojo oscuro `#9c3b2d`, con la tipografía Varela Round, y tiene
+**modo claro y modo oscuro** (el botón de la luna/sol de la cabecera; la elección se recuerda).
 
 **Pruébalo en vivo:** https://jltaboada.github.io/html-editor/
 
@@ -82,9 +82,14 @@ python -m http.server 8080
 - **Memoria de trabajo**: el borrador se guarda solo (también al cerrar o recargar el navegador) y,
   al volver, se restauran el texto, el nombre, la vista, la división de paneles, el desplazamiento
   sincronizado, los colores, el corrector, las opciones de impresión y las reglas de limpieza.
+- **Barras de estado por editor**: el panel visual muestra los caracteres y palabras del texto
+  visible, y el panel de código (HTML o Markdown) muestra los caracteres y palabras de ese código
+  junto a la línea y la columna del cursor. El pie de página solo conserva el estado de guardado,
+  el tamaño del documento y el crédito «© jltaboada».
+- **Modo claro y oscuro**: se cambia con el botón de la cabecera; también se oscurece la hoja del
+  editor visual y el resaltado del código. La preferencia se guarda con el resto de ajustes.
 - **Extras**: codificar/decodificar entidades HTML, indentar, comprimir, copiar el código,
-  desplazamiento sincronizado de los paneles, contador de caracteres/palabras, modo enfoque y
-  Lorem ipsum.
+  desplazamiento sincronizado de los paneles, modo enfoque y Lorem ipsum.
 - **Privacidad**: nada se envía a ningún servidor. El borrador y las preferencias viven en
   `localStorage`.
 
@@ -109,9 +114,8 @@ En macOS se usa `⌘` en lugar de `Ctrl`.
 ```
 index.html                 Estructura de la app y orden de carga de scripts
 assets/css/app.css         Base de la interfaz
-assets/css/theme-beaypepe.css  Paleta, tipografía y acabados BeayPePeTools
+assets/css/theme-jltaboada.css  Paleta clara/oscura, tipografía y acabados
 assets/fonts/              Varela Round (woff2) y licencia SIL OFL
-assets/img/                Logotipo de BeayPePeTools (no se usa en la interfaz)
 assets/js/utils.js         Utilidades (DOM, avisos, descargas, confirmaciones…)
 assets/js/emojis.js        Datos de emoticonos y caracteres especiales (nombres en español)
 assets/js/demo.js          Texto de relleno (Lorem ipsum)

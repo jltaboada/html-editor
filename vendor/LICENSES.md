@@ -16,9 +16,6 @@ original; los textos completos están disponibles en los repositorios indicados.
 | [js-beautify](https://github.com/beautifier/js-beautify) | 1.15.1 | `beautify.min.js`, `beautify-css.min.js`, `beautify-html.min.js` | MIT |
 | [Varela Round](https://github.com/alefalefalef/Varela-Round-Hebrew) | v21 (Google Fonts) | `assets/fonts/varela-round-latin.woff2`, `assets/fonts/varela-round-latin-ext.woff2` | SIL OFL 1.1 |
 
-El logo de `assets/img/beaypepe-logo.png` es propiedad de BeayPePeTools y se usa como
-identificador visual del proyecto.
-
 ## Avisos de licencia
 
 ### MIT

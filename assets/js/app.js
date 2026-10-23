@@ -13,10 +13,10 @@
   const VIEWS = ['split', 'visual', 'source'];
 
   const PALETTE = [
-    '#000000', '#222222', '#5f452a', '#7a5a3a', '#02874d', '#026a3d',
-    '#0f5132', '#9aa3a0', '#b03a2e', '#dc2626', '#f97316', '#d97706',
-    '#ca8a04', '#84cc16', '#16a34a', '#14b8a6', '#1d4ed8', '#2563eb',
-    '#4f46e5', '#7c3aed', '#a21caf', '#db2777', '#d1e7dd', '#ffffff',
+    '#000000', '#222222', '#4a4a4a', '#9a9a9a', '#9c3b2d', '#7c2c21',
+    '#c05b4b', '#e0a396', '#f4e6e2', '#ffffff', '#b03a2e', '#dc2626',
+    '#f97316', '#d97706', '#ca8a04', '#84cc16', '#16a34a', '#14b8a6',
+    '#1d4ed8', '#2563eb', '#4f46e5', '#7c3aed', '#a21caf', '#db2777',
   ];
 
   const state = {
@@ -46,6 +46,7 @@
     colorTarget: 'text',
     print: { size: 'a4', orientation: 'portrait', margins: 'normal' },
     spellcheck: true,
+    theme: 'light',
     codeLang: 'html',
     mdKeepHtml: true,
     mdEditor: null,
@@ -158,6 +159,8 @@
       markDirty();
       syncSourceDebounced();
       markMarkdownStale();
+      updateSourceStatus();
+      updateCharPill();
       scheduleMeta();
     });
 
@@ -189,7 +192,7 @@
       state.cm.setCursor({ line: line, ch: Math.min(cursor.ch, state.cm.getLine(line).length) });
     }
     if (!opts.fromVisual) state.lastEdited = 'source';
-    updateCursorPos();
+    updateSourceStatus();
     updateCharPill();
   }
 
@@ -290,7 +293,7 @@
       }
       cancelVisualSync();
       state.wysiwyg.setHtml(value);
-      updateCursorPos();
+      updateSourceStatus();
       updateCharPill();
     } finally {
       state.applyingMarkdown = false;
@@ -351,7 +354,7 @@
         if (!silent) editor.focus();
       });
     }
-    updateCursorPos();
+    updateSourceStatus();
     if (!silent) {
       saveSettingsDebounced();
       scheduleAutoSave();
@@ -405,12 +408,13 @@
       state.lastEdited = 'source';
       markDirty();
       updateCharPill();
+      updateSourceStatus();
       applyMarkdownDebounced();
     });
     state.mdEditor.on('focus', function () { state.lastEdited = 'source'; });
     state.mdEditor.on('cursorActivity', updateCursorPos);
     state.mdEditor.on('scroll', onSourceScroll);
-    state.mdStale = false;
+    // El estado de «Markdown obsoleto» viene del borrador: no se reinicia aquí.
   }
 
   function bindMarkdownSwitch() {
@@ -438,6 +442,7 @@
       state.pendingVisualHtml = null;
       state.wysiwyg.setHtml(html || '');
       state.wysiwyg.setSpellcheck(state.spellcheck);
+      state.wysiwyg.setTheme(state.theme);
       updateToolbarState(state.wysiwyg.getState());
       refreshMeta();
       if (state.wysiwyg.document) {
@@ -532,14 +537,41 @@
   function refreshMeta() {
     const html = getWorkingHtml();
     const stats = App.stats(html);
-    const words = stats.words;
-    const statsEl = $('#stats');
-    if (statsEl) statsEl.textContent = stats.chars.toLocaleString('es-ES') + ' caracteres · ' + words.toLocaleString('es-ES') + ' palabras';
-    const charCount = $('#charCount');
-    if (charCount) charCount.textContent = stats.chars.toLocaleString('es-ES');
     const size = $('#docSize');
     if (size) size.textContent = App.formatBytes(stats.bytes);
+    updateCharPill();
+    updateSourceStatus();
+    updateVisualStatus();
     updateDocTitle(html);
+  }
+
+  function plural(count, singular, pluralForm) {
+    return count.toLocaleString('es-ES') + ' ' + (count === 1 ? singular : pluralForm);
+  }
+
+  function setStatusText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  /* Caracteres y palabras de lo que se ve en el editor visual. */
+  function updateVisualStatus() {
+    if (!state.wysiwyg || !state.wysiwyg.isReady) return;
+    const text = state.wysiwyg.getText ? state.wysiwyg.getText() : '';
+    const visible = text.replace(/\s+/g, ' ').trim();
+    setStatusText('visualChars', plural(visible.length, 'carácter', 'caracteres'));
+    setStatusText('visualWords', plural(App.countWords(visible), 'palabra', 'palabras'));
+  }
+
+  /* Caracteres y palabras del editor de código activo (HTML o Markdown). */
+  function updateSourceStatus() {
+    const editor = activeSourceEditor();
+    if (!editor) return;
+    const value = editor.getValue();
+    setStatusText('sourceStatusLang', markdownActive() ? 'Markdown' : 'HTML');
+    setStatusText('sourceChars', plural(value.length, 'carácter', 'caracteres'));
+    setStatusText('sourceWords', plural(App.countWords(value), 'palabra', 'palabras'));
+    updateCursorPos();
   }
 
   function sizeFileNameInput(input) {
@@ -572,8 +604,7 @@
     const editor = activeSourceEditor();
     if (!editor) return;
     const pos = editor.getCursor();
-    const el = $('#cursorPos');
-    if (el) el.textContent = 'Ln ' + (pos.line + 1) + ', Col ' + (pos.ch + 1);
+    setStatusText('sourceCursorPos', 'Ln ' + (pos.line + 1) + ', Col ' + (pos.ch + 1));
   }
 
   /* ---------- Guardado ---------- */
@@ -595,7 +626,7 @@
     let icon = 'i-cloud-check';
     if (kind === 'dirty' || kind === 'saving') icon = 'i-clock';
     if (kind === 'error') icon = 'i-alert';
-    el.innerHTML = '<svg class="icon icon--xs" aria-hidden="true"><use href="#' + icon + '"/></svg> ' + App.escapeHtml(text);
+    el.innerHTML = '<svg class="icon icon--xs" aria-hidden="true"><use href="#' + icon + '"/></svg> <span id="saveStatusText">' + App.escapeHtml(text) + '</span>';
   }
 
   function saveDraft(manual, silent) {
@@ -663,6 +694,7 @@
         cleanIds: state.cleanIds,
         colors: state.colors,
         spellcheck: state.spellcheck,
+        theme: state.theme,
         print: state.print,
         codeLang: state.codeLang,
         mdKeepHtml: state.mdKeepHtml,
@@ -695,8 +727,12 @@
       btn.classList.toggle('is-active', active);
       btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
-    if (view !== 'source' && state.cm) {
-      requestAnimationFrame(function () { state.cm.refresh(); });
+    // El panel que estaba oculto necesita medirse de nuevo al mostrarse.
+    if (state.cm || state.mdEditor) {
+      requestAnimationFrame(function () {
+        if (state.cm) state.cm.refresh();
+        if (state.mdEditor) state.mdEditor.refresh();
+      });
     }
     if (!silent) saveSettingsDebounced();
   }
@@ -708,6 +744,39 @@
     const splitter = $('#splitter');
     if (splitter) splitter.setAttribute('aria-valuenow', String(Math.round(state.split)));
     saveSettingsDebounced();
+  }
+
+  /* ---------- Tema claro / oscuro ---------- */
+
+  function updateThemeButton() {
+    const btn = $('#themeBtn');
+    if (!btn) return;
+    const dark = state.theme === 'dark';
+    const use = btn.querySelector('use');
+    if (use) use.setAttribute('href', dark ? '#i-sun' : '#i-moon');
+    const label = dark ? 'Cambiar al modo claro' : 'Cambiar al modo oscuro';
+    btn.setAttribute('title', label);
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+  }
+
+  function applyTheme(theme, options) {
+    const opts = options || {};
+    state.theme = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', state.theme);
+    document.documentElement.style.colorScheme = state.theme;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', state.theme === 'dark' ? '#0a0a0a' : '#141414');
+    updateThemeButton();
+    if (state.wysiwyg && state.wysiwyg.setTheme) state.wysiwyg.setTheme(state.theme);
+    if (opts.persist !== false) {
+      state.settings.theme = state.theme;
+      persistSettings();
+    }
+  }
+
+  function toggleTheme() {
+    applyTheme(state.theme === 'dark' ? 'light' : 'dark');
   }
 
   /* ---------- Desplegables con vista previa ---------- */
@@ -2535,6 +2604,9 @@
       });
     }
 
+    const themeBtn = $('#themeBtn');
+    if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+
     const helpBtn = $('#helpBtn');
     if (helpBtn) helpBtn.addEventListener('click', openHelp);
   }
@@ -3127,8 +3199,8 @@
 
   function init() {
     state.settings = readSettings();
-    const creditYear = document.querySelector('#creditYear');
-    if (creditYear) creditYear.textContent = String(new Date().getFullYear());
+    state.theme = state.settings.theme === 'dark' ? 'dark' : 'light';
+    applyTheme(state.theme, { persist: false });
     state.view = VIEWS.indexOf(state.settings.view) !== -1 ? state.settings.view : 'split';
     state.split = clamp(Number(state.settings.split) || 50, 20, 80);
     state.autoScroll = state.settings.autoScroll !== false;
@@ -3201,7 +3273,6 @@
     setDockTab('clean');
     updateHistoryButtons();
     refreshMeta();
-    updateCursorPos();
     state.booting = false;
 
     if (draft) {
