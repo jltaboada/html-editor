@@ -1,0 +1,208 @@
+<!-- Versión HTML de los textos de presentación, lista para pegar en tu web.
+     No incluye estilos: hereda los de tu página.
+     La imagen de cabecera va con la ruta que uses en tu web; cambia el src y el alt si hace falta.
+
+     Archivos de imagen incluidos junto a estos textos:
+       captura-editor-wysiwyg.png        1800 × 1193 (recomendada)
+       captura-editor-wysiwyg.webp       1800 × 1193 (116 KB, misma calidad)
+       captura-editor-wysiwyg-oscuro.png 1800 × 1193 (modo oscuro)
+       captura-editor-claro.png          3200 × 2120 (original a doble resolución)
+       captura-editor-oscuro.png         3200 × 2120 (original en modo oscuro)
+-->
+
+<!-- ===================== 1. DESCRIPCIÓN BREVE (listado de proyectos) ===================== -->
+
+<p class="project-summary">
+  Editor WYSIWYG de HTML y Markdown que funciona entero en el navegador: vista visual y código
+  sincronizados, limpieza de HTML, historial de versiones y exportación a HTML, Markdown, PDF o
+  Word. Sin cuentas, sin servidores y sin subir nada.
+</p>
+
+<!-- Alternativa de una línea, para tarjetas estrechas:
+<p class="project-summary">Editor de HTML y Markdown en el navegador, con vista visual y código sincronizados.</p>
+
+     Alternativa con voz propia:
+<p class="project-summary">El editor HTML y Markdown que me hice porque estaba cansado de las limitaciones de los que había: sin cuentas, sin anuncios y con todo el código a la vista.</p>
+-->
+
+
+<!-- ===================== 2. DESCRIPCIÓN DETALLADA (página del proyecto) ===================== -->
+
+<article class="project">
+
+  <figure>
+    <picture>
+      <source srcset="img/captura-editor-wysiwyg.webp" type="image/webp">
+      <img src="img/captura-editor-wysiwyg.png" width="1800" height="1193"
+           alt="Editor WYSIWYG con el panel visual y el panel de código HTML sincronizados">
+    </picture>
+    <figcaption>El editor en funcionamiento: panel visual y código sincronizados.</figcaption>
+  </figure>
+
+  <h2>Un editor de HTML y Markdown que no te pone límites</h2>
+
+  <p>
+    <strong>Editor WYSIWYG</strong> es un editor de HTML y Markdown que funciona íntegramente en el
+    navegador. No hay servidor, no hay cuentas y no hay instalación: abres la página, escribes y
+    descargas tu documento. Todo lo que haces se queda en tu equipo.
+  </p>
+
+  <h3>Por qué lo hice</h3>
+
+  <p>
+    Llevo años usando editores HTML en línea y siempre acababa igual: peleándome con la herramienta
+    en lugar de escribiendo.
+  </p>
+
+  <ul>
+    <li>Unos te obligan a registrarte para poder descargar tu propio documento.</li>
+    <li>Otros te devuelven un HTML imposible de leer, lleno de <code>&lt;span&gt;</code> con estilos
+      y clases heredadas de Word.</li>
+    <li>Casi ninguno mantiene el panel de código en sincronía real con lo que ves: cambias una
+      palabra arriba y el código de abajo se queda como estaba.</li>
+    <li>Si quieres escribir en Markdown, o no puedes, o pierdes todos los estilos al volver a HTML.</li>
+    <li>Y muchos cargan anuncios, analítica y rastreadores en una página que, en teoría, solo sirve
+      para escribir texto.</li>
+  </ul>
+
+  <p>
+    Estaba cansado de esas limitaciones, así que decidí hacerme mi propio editor: uno que hiciera
+    bien lo que yo necesitaba y que no me obligara a nada. Este proyecto es el resultado.
+  </p>
+
+  <h3>El corazón: HTML y Markdown, sin perder nada</h3>
+
+  <p>
+    Lo que más me importaba era que el panel visual y el panel de código fueran
+    <strong>el mismo documento</strong>, no dos vistas que se parecen.
+  </p>
+
+  <ul>
+    <li>
+      <strong>Sincronización real en los dos sentidos.</strong> Escribes en el panel visual y el
+      código se actualiza en milisegundos; editas el código y el documento cambia al momento. Cada
+      modo conserva su propio historial de deshacer y su posición del cursor.
+    </li>
+    <li>
+      <strong>Código siempre ordenado.</strong> No hace falta pulsar «formatear»: lo que llega al
+      panel de código ya viene indentado, y al pegar HTML también se ordena solo. Si comprimes el
+      documento, se respeta hasta que vuelvas a editarlo.
+    </li>
+    <li>
+      <strong>Dos lenguajes, un documento.</strong> El conmutador HTML | MD convierte el documento en
+      Markdown y de vuelta. Con <strong>HTML incrustado</strong> activado, todo lo que Markdown no
+      sabe representar (colores, tipografías, vídeos, fórmulas, tablas complejas) viaja dentro del
+      Markdown y no se pierde; al desactivarlo obtienes Markdown estándar y limpio. También hay notas
+      al pie y listas de tareas con casillas que se marcan en el panel visual.
+    </li>
+    <li>
+      <strong>Una vista previa que funciona de verdad.</strong> Los enlaces se pueden pulsar, el CSS
+      y las tablas se aplican, los vídeos y los formularios responden, y puedes alternar entre el
+      ancho de escritorio y el de móvil. Los scripts siguen desactivados mientras editas, y solo se
+      ejecutan si abres el documento en una pestaña nueva.
+    </li>
+    <li>
+      <strong>Ecuaciones en LaTeX sin dependencias.</strong> Se escriben con el botón ∑ y se guardan
+      como MathML: el HTML exportado muestra las fórmulas sin cargar ninguna librería.
+    </li>
+  </ul>
+
+  <h3>Lo que no suele encontrarse en otros editores</h3>
+
+  <ul>
+    <li>
+      <strong>Formato de página real.</strong> A4, Carta, Legal y A5, en vertical u horizontal, con
+      márgenes normales, estrechos, amplios, sin márgenes o personalizados en milímetros. La hoja del
+      editor, la vista previa, el PDF y el HTML descargado usan ese mismo formato.
+    </li>
+    <li>
+      <strong>Revisión de HTML en vivo.</strong> Mientras escribes, el editor avisa de etiquetas sin
+      cerrar, cierres que no corresponden, atributos repetidos o en mayúsculas, <code>id</code>
+      duplicados, imágenes sin <code>alt</code>… y cada aviso te lleva a la línea y la columna
+      exactas.
+    </li>
+    <li>
+      <strong>Historial de versiones.</strong> Guarda una versión cada 1, 2, 5, 10, 15 o 30 minutos
+      (o solo cuando tú quieras), hasta 30, y puedes restaurar cualquiera de ellas con confirmación y
+      deshacerlo con <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
+    </li>
+    <li>
+      <strong>Limpieza de HTML en 11 reglas.</strong> Estilos inline, clases, identificadores,
+      etiquetas vacías, comentarios, atributos sobrantes, espacios repetidos, scripts… Pensada para
+      el HTML que llega pegado de otras herramientas.
+    </li>
+    <li>
+      <strong>Tablas e imágenes editables de verdad.</strong> Con el cursor dentro de una tabla
+      aparece una barra para añadir o quitar filas y columnas; al seleccionar una imagen aparece un
+      tirador para cambiar su tamaño manteniendo la proporción.
+    </li>
+    <li>
+      <strong>Paleta de comandos con <kbd>Ctrl</kbd>+<kbd>K</kbd>.</strong> Las 49 acciones del
+      editor en un buscador que ignora los acentos: escribe «tabla», «oscuro», «margenes» o «pdf» y
+      pulsa <kbd>Enter</kbd>.
+    </li>
+    <li>
+      <strong>Todo local y sin compilar.</strong> No hay servidor, ni cuentas, ni anuncios, ni
+      rastreadores. Las librerías viajan dentro del proyecto, así que funciona incluso abriendo
+      <code>index.html</code> con doble clic, sin conexión y sin instalar nada.
+    </li>
+  </ul>
+
+  <h3>Todo lo demás</h3>
+
+  <p>
+    Además de lo anterior, el editor incluye limpiador y buscador con expresiones regulares (hasta
+    10 reglas guardadas), corrección ortográfica con selección de idioma, modo claro y oscuro, modo
+    enfoque (<kbd>F11</kbd>), impresión sin encabezados ni pies de página, y exportación a HTML,
+    Markdown, PDF, ZIP con las imágenes incrustadas y Word (<code>.docx</code>), además de
+    importación de <code>.html</code>, <code>.md</code>, <code>.docx</code> y <code>.txt</code>.
+    Para escribir hay 1.898 emoticonos con buscador en español, 300 caracteres especiales en siete
+    categorías, inserción de vídeo de YouTube, Vimeo y Dailymotion, líneas horizontales, fecha y
+    hora en seis formatos y texto de relleno. Y el borrador se guarda solo: al cerrar y volver,
+    siguen ahí el documento, el nombre, la vista, la división de los paneles, el tema y hasta el
+    idioma del corrector.
+  </p>
+
+  <h3>Es para todo el mundo</h3>
+
+  <p>
+    Puedes usarlo ahora mismo, sin registrarte, en
+    <a href="https://jltaboada.github.io/wysiwyg/">jltaboada.github.io/wysiwyg</a>.
+  </p>
+
+  <p>
+    Y el código está en GitHub, en
+    <a href="https://github.com/jltaboada/wysiwyg">github.com/jltaboada/wysiwyg</a>. Cualquiera
+    puede clonarlo, estudiarlo y modificarlo a su gusto:
+  </p>
+
+  <pre><code>git clone https://github.com/jltaboada/wysiwyg.git</code></pre>
+
+  <p>
+    Es una web estática, así que no hace falta compilar, ni instalar dependencias, ni montar un
+    servidor: se abre la carpeta y funciona. Si quieres tu propia copia en línea, puedes publicarla
+    en GitHub Pages, Netlify, Vercel, Cloudflare Pages o cualquier servidor, sin cambiar una línea.
+  </p>
+
+  <p>
+    Si encuentras un fallo, se te ocurre una mejora o quieres contar cómo lo usas, abre una
+    <em>issue</em> en el repositorio. Lo hice para mí, pero si a ti te sirve, mejor todavía.
+  </p>
+
+</article>
+
+
+<!-- ===================== 3. FICHA TÉCNICA (opcional) ===================== -->
+
+<table class="project-facts">
+  <tbody>
+    <tr><th scope="row">Tipo</th><td>Editor WYSIWYG de HTML y Markdown, 100 % en el navegador</td></tr>
+    <tr><th scope="row">Estado</th><td>En desarrollo activo</td></tr>
+    <tr><th scope="row">Demo</th><td><a href="https://jltaboada.github.io/wysiwyg/">https://jltaboada.github.io/wysiwyg/</a></td></tr>
+    <tr><th scope="row">Código</th><td><a href="https://github.com/jltaboada/wysiwyg">https://github.com/jltaboada/wysiwyg</a></td></tr>
+    <tr><th scope="row">Tecnología</th><td>HTML, CSS y JavaScript sin frameworks, sin proceso de compilación</td></tr>
+    <tr><th scope="row">Librerías</th><td>CodeMirror, KaTeX, marked, Turndown, Mammoth, JSZip y js-beautify, incluidas en el repositorio</td></tr>
+    <tr><th scope="row">Datos</th><td>Nada se envía a ningún servidor: el documento y las preferencias se guardan en el navegador</td></tr>
+    <tr><th scope="row">Publicación</th><td>Cualquier alojamiento estático (GitHub Pages, Netlify, Vercel, un servidor propio)</td></tr>
+  </tbody>
+</table>
