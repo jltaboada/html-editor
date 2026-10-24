@@ -1,8 +1,8 @@
 # Editor WYSIWYG · jltaboada
 
-**▶ Pruébalo en vivo: <https://jltaboada.github.io/html-editor/>**
+**▶ Pruébalo en vivo: <https://jltaboada.github.io/wysiwyg/>**
 
-[Demo](https://jltaboada.github.io/html-editor/) · [Cómo usarlo](#cómo-usarlo) · [Publicar tu copia](#publicar-tu-propia-copia) · [Modificarlo](#cómo-modificarlo) · [Invítame a una caña](#invítame-a-una-caña)
+[Demo](https://jltaboada.github.io/wysiwyg/) · [Cómo usarlo](#cómo-usarlo) · [Publicar tu copia](#publicar-tu-propia-copia) · [Modificarlo](#cómo-modificarlo) · [Invítame a una caña](#invítame-a-una-caña)
 
 Editor WYSIWYG que funciona **100% en el navegador**, sin servidor ni instalación: un panel visual
 sincronizado en tiempo real con un panel de código que puede mostrarse en **HTML o Markdown**,
@@ -22,7 +22,7 @@ La interfaz usa blanco, negro y rojo oscuro `#9c3b2d`, con la tipografía Varela
 
 ### En línea, sin instalar nada
 
-Abre **<https://jltaboada.github.io/html-editor/>** en cualquier navegador moderno. La aplicación
+Abre **<https://jltaboada.github.io/wysiwyg/>** en cualquier navegador moderno. La aplicación
 se descarga una vez y todo el trabajo (borrador, preferencias e historial) se queda en tu
 navegador: no hay cuentas, servidores ni subida de documentos.
 
@@ -32,7 +32,7 @@ No hace falta `npm`, ni compilar, ni instalar dependencias: todo el código y la
 en el repositorio.
 
 ```sh
-git clone https://github.com/jltaboada/html-editor.git
+git clone https://github.com/jltaboada/wysiwyg.git
 cd html-editor
 ```
 

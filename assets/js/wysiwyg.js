@@ -26,6 +26,7 @@
     :root[data-theme="dark"] { color-scheme: dark; }
     html, body { margin: 0; padding: 0; }
     body {
+      box-sizing: border-box;
       min-height: 100vh;
       padding: 48px 56px 110px;
       background: #ffffff;
