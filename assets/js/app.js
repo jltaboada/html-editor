@@ -75,6 +75,7 @@
     future: [],
     scrollLock: null,
     scrollTimer: null,
+    silentScrollUntil: 0,
     statusHint: '',
   };
 
@@ -86,6 +87,20 @@
 
   function nextFrame() {
     return new Promise((resolve) => setTimeout(resolve, 30));
+  }
+
+  /**
+   * La app recoloca el cursor y el desplazamiento de los paneles al
+   * sincronizarlos. Esos movimientos también disparan eventos `scroll`, que no
+   * deben confundirse con los del usuario: durante esta ventana se ignoran, de
+   * modo que un panel nunca arrastra al otro sin que nadie lo haya pedido.
+   */
+  function silenceScrollSync(ms) {
+    state.silentScrollUntil = Date.now() + (ms || 180);
+  }
+
+  function scrollSyncSilenced() {
+    return Date.now() < state.silentScrollUntil;
   }
 
   function normalizeHex(value) {
@@ -193,18 +208,29 @@
     if (!state.cm) return;
     const opts = options || {};
     const info = state.cm.getScrollInfo();
-    const cursor = state.cm.getCursor();
+    const selection = state.cm.listSelections().map(function (range) {
+      return { anchor: range.anchor, head: range.head };
+    });
+    silenceScrollSync();
     state.suppressSource = true;
     try {
       state.cm.setValue(String(html == null ? '' : html));
+      if (opts.preserveCursor !== false && state.cm.lineCount() > 0) {
+        const fix = function (pos) {
+          const line = clamp(pos.line, 0, state.cm.lineCount() - 1);
+          return { line: line, ch: Math.min(pos.ch, state.cm.getLine(line).length) };
+        };
+        /* `scroll: false` evita que CodeMirror lleve la vista al cursor: si no,
+           al escribir en el panel visual el código saltaba a la línea 0 y ese
+           salto se propagaba de vuelta al documento. */
+        state.cm.setSelections(selection.map(function (range) {
+          return { anchor: fix(range.anchor), head: fix(range.head) };
+        }), null, { scroll: false });
+      }
     } finally {
       state.suppressSource = false;
     }
     if (opts.preserveScroll !== false) state.cm.scrollTo(null, info.top);
-    if (opts.preserveCursor !== false && state.cm.lineCount() > 0) {
-      const line = clamp(cursor.line, 0, state.cm.lineCount() - 1);
-      state.cm.setCursor({ line: line, ch: Math.min(cursor.ch, state.cm.getLine(line).length) });
-    }
     if (!opts.fromVisual) state.lastEdited = 'source';
     updateSourceStatus();
     updateCharPill();
@@ -244,6 +270,7 @@
   function flushSourceToVisual() {
     syncSourceDebounced.cancel();
     if (!state.wysiwyg || !state.wysiwyg.isReady || !state.cm) return;
+    silenceScrollSync();
     state.wysiwyg.setHtml(state.cm.getValue());
   }
 
@@ -284,8 +311,25 @@
     state.mdValue = markdown;
     state.mdStale = false;
     const info = state.mdEditor.getScrollInfo();
+    const selection = state.mdEditor.listSelections().map(function (range) {
+      return { anchor: range.anchor, head: range.head };
+    });
+    silenceScrollSync();
     state.suppressMd = true;
-    try { state.mdEditor.setValue(markdown); } finally { state.suppressMd = false; }
+    try {
+      state.mdEditor.setValue(markdown);
+      if (state.mdEditor.lineCount() > 0) {
+        const fix = function (pos) {
+          const line = clamp(pos.line, 0, state.mdEditor.lineCount() - 1);
+          return { line: line, ch: Math.min(pos.ch, state.mdEditor.getLine(line).length) };
+        };
+        state.mdEditor.setSelections(selection.map(function (range) {
+          return { anchor: fix(range.anchor), head: fix(range.head) };
+        }), null, { scroll: false });
+      }
+    } finally {
+      state.suppressMd = false;
+    }
     state.mdEditor.scrollTo(null, info.top);
   }
 
@@ -299,13 +343,11 @@
       state.mdStale = false;
       if (state.compressed) state.compressed = false;
       state.lastEdited = 'source';
-      state.suppressSource = true;
-      try {
-        if (state.cm && state.cm.getValue() !== value) state.cm.setValue(value);
-      } finally {
-        state.suppressSource = false;
+      if (state.cm && state.cm.getValue() !== value) {
+        setSource(value, { fromVisual: false });
       }
       cancelVisualSync();
+      silenceScrollSync();
       state.wysiwyg.setHtml(value);
       updateSourceStatus();
       updateCharPill();
@@ -497,8 +539,11 @@
   function onVisualScroll(info) {
     updateOverlays();
     if (!state.autoScroll || !state.cm || state.scrollLock === 'visual') return;
-    state.scrollLock = 'source';
+    if (scrollSyncSilenced() || state.view !== 'split') return;
     const size = state.cm.getScrollInfo();
+    /* Con el panel de código oculto sus medidas no son fiables. */
+    if (size.clientHeight <= 0 || size.height <= 0) return;
+    state.scrollLock = 'source';
     const max = Math.max(0, size.height - size.clientHeight);
     state.cm.scrollTo(null, Math.round(max * (info ? info.ratio : 0)));
     clearTimeout(state.scrollTimer);
@@ -508,7 +553,10 @@
   function onSourceScroll() {
     const editor = activeSourceEditor();
     if (!state.autoScroll || !state.wysiwyg || !state.wysiwyg.isReady || state.scrollLock === 'source' || !editor) return;
+    if (scrollSyncSilenced() || state.view !== 'split') return;
     const size = editor.getScrollInfo();
+    /* Con el panel de código oculto (vista Visual) sus medidas no son fiables. */
+    if (size.clientHeight <= 0 || size.height <= 0) return;
     const max = Math.max(0, size.height - size.clientHeight);
     const ratio = max > 0 ? size.top / max : 0;
     state.scrollLock = 'visual';
@@ -545,6 +593,7 @@
     if (opts.format !== false) value = formatHtml(value);
     setSource(value, { preserveScroll: !opts.resetScroll, preserveCursor: !opts.resetScroll });
     if (state.wysiwyg && state.wysiwyg.isReady) {
+      silenceScrollSync();
       state.wysiwyg.setHtml(value);
       if (opts.resetScroll) state.wysiwyg.setScrollRatio(0);
     } else {
@@ -4447,6 +4496,9 @@
 
   const syncSourceDebounced = App.debounce(function () {
     if (!state.wysiwyg || !state.wysiwyg.isReady) return;
+    /* Si el último cambio salió del panel visual, el código ya es su reflejo:
+       volver a pintarlo solo serviría para perder el cursor. */
+    if (state.lastEdited === 'visual') return;
     state.wysiwyg.setHtml(state.cm ? state.cm.getValue() : '');
   }, 260);
 

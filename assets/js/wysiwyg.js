@@ -164,6 +164,7 @@
       page: null,
       composing: false,
       activeImage: null,
+      silentScroll: false,
     };
 
     const readyPromise = new Promise((resolve) => {
@@ -235,6 +236,7 @@
         if (opts.onInput) opts.onInput(api.getHtml());
       };
       const emitScroll = App.throttle(() => {
+        if (state.silentScroll) return;
         if (opts.onScroll) opts.onScroll(api.getScrollInfo());
       }, 70);
 
@@ -637,6 +639,62 @@
       if (state.doc) state.doc.documentElement.setAttribute('data-theme', state.theme);
     }
 
+    /** Ruta de índices desde <body> hasta un nodo, para poder recuperarlo
+     *  después de sustituir el HTML (una Range apunta a nodos que ya no están). */
+    function nodePath(node) {
+      const path = [];
+      let current = node;
+      while (current && current !== state.body) {
+        const parent = current.parentNode;
+        if (!parent) return null;
+        path.unshift(Array.prototype.indexOf.call(parent.childNodes, current));
+        current = parent;
+      }
+      return current === state.body ? path : null;
+    }
+
+    function nodeFromPath(path) {
+      let node = state.body;
+      for (let i = 0; i < path.length; i += 1) {
+        node = node.childNodes[path[i]];
+        if (!node) return null;
+      }
+      return node;
+    }
+
+    function readSelection() {
+      const sel = state.doc.getSelection();
+      if (!sel || !sel.rangeCount) return null;
+      const range = sel.getRangeAt(0);
+      if (!isInsideBody(range.commonAncestorContainer)) return null;
+      const anchorPath = nodePath(range.startContainer);
+      const focusPath = nodePath(range.endContainer);
+      if (!anchorPath || !focusPath) return null;
+      return {
+        anchor: { path: anchorPath, offset: range.startOffset },
+        focus: { path: focusPath, offset: range.endOffset },
+      };
+    }
+
+    function restoreSelection(saved) {
+      if (!saved) return false;
+      const anchorNode = nodeFromPath(saved.anchor.path);
+      const focusNode = nodeFromPath(saved.focus.path);
+      if (!anchorNode || !focusNode) return false;
+      const range = state.doc.createRange();
+      try {
+        range.setStart(anchorNode, Math.min(saved.anchor.offset, anchorNode.nodeType === 1 ? anchorNode.childNodes.length : (anchorNode.nodeValue || '').length));
+        range.setEnd(focusNode, Math.min(saved.focus.offset, focusNode.nodeType === 1 ? focusNode.childNodes.length : (focusNode.nodeValue || '').length));
+        const sel = state.doc.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        state.savedRange = range.cloneRange();
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
     function setHtml(html) {
       if (!state.ready) return;
       let value = String(html == null ? '' : html);
@@ -645,31 +703,38 @@
       }
       const win = state.win;
       const scrollY = win ? (win.scrollY || win.pageYOffset || 0) : 0;
-      const sel = state.doc.getSelection();
-      let restoreRange = null;
-      if (sel && sel.rangeCount) {
-        const range = sel.getRangeAt(0);
-        if (isInsideBody(range.commonAncestorContainer)) restoreRange = range.cloneRange();
+      /* Solo se toca la selección si el documento visual tenía el foco: en
+         caso contrario se pisaría la del panel en el que se está escribiendo. */
+      const hadFocus = state.doc.hasFocus();
+      const savedSelection = hadFocus ? readSelection() : null;
+      /* El reemplazo del contenido puede disparar un scroll momentáneo: no debe
+         propagarse al panel de código ni arrastrarlo. */
+      state.silentScroll = true;
+      try {
+        state.body.innerHTML = value;
+        state.activeImage = null;
+        if (!value || !state.body.textContent.trim() && !state.body.querySelector('img,table,hr,ul,ol,blockquote')) {
+          state.body.innerHTML = '<p><br></p>';
+        } else {
+          wrapLooseBlocks();
+        }
+        prepareTaskInputs();
+      } finally {
+        state.silentScroll = false;
       }
-      state.body.innerHTML = value;
-      state.activeImage = null;
-      if (!value || !state.body.textContent.trim() && !state.body.querySelector('img,table,hr,ul,ol,blockquote')) {
-        state.body.innerHTML = '<p><br></p>';
-      } else {
-        wrapLooseBlocks();
-      }
-      prepareTaskInputs();
-      if (restoreRange && isInsideBody(restoreRange.commonAncestorContainer)) {
-        try {
-          sel.removeAllRanges();
-          sel.addRange(restoreRange);
-        } catch (error) { /* ignorar */ }
-      }
-      state.savedRange = restoreRange;
       if (win) {
         win.scrollTo(0, scrollY);
+        /* Segundo ajuste tras el reflujo: el navegador recorta el scroll si el
+           documento aún no ha recuperado su altura. */
+        win.requestAnimationFrame(function () {
+          if (!state.ready) return;
+          /* Si mientras tanto alguien ha movido la vista, no se toca. */
+          if (Math.abs((win.scrollY || 0) - scrollY) > 2) return;
+          win.scrollTo(0, scrollY);
+        });
         try { state.doc.execCommand('styleWithCSS', false, false); } catch (error) { /* ignorar */ }
       }
+      restoreSelection(savedSelection);
     }
 
     function setScrollRatio(ratio) {
